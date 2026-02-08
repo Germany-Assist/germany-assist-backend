@@ -8,19 +8,25 @@ export default async function setupSwagger(app) {
 
     // Tell the "Try it out" button exactly where to go via http
     swaggerDocument.servers = [
-      { url: "http://www.germany-assist.com/staging/backend" },
+      { url: "http://www.germany-assist.com/staging/backend/api" },
     ];
 
     app.use(
       "/docs",
+      (req, res, next) => {
+        // This tells the browser: "Do NOT upgrade to HTTPS, and stay on HTTP"
+        res.removeHeader("Content-Security-Policy");
+        res.setHeader(
+          "Content-Security-Policy",
+          "default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';",
+        );
+        next();
+      },
       swaggerUi.serve,
       swaggerUi.setup(swaggerDocument, {
-        // Using relative paths (no leading slash) or explicit staging paths
-        customCssUrl: "/staging/backend/docs/swagger-ui.css",
-        customJs: [
-          "/staging/backend/docs/swagger-ui-bundle.js",
-          "/staging/backend/docs/swagger-ui-standalone-preset.js",
-        ],
+        // We use relative paths to avoid the domain name entirely
+        customCssUrl: "swagger-ui.css",
+        customJs: ["swagger-ui-bundle.js", "swagger-ui-standalone-preset.js"],
       }),
     );
     console.log("✅ Swagger documentation initialized");
