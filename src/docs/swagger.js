@@ -11,7 +11,9 @@ export default async function setupSwagger(app) {
     app.use(
       "/staging/backend/docs",
       swaggerUi.serve,
-      swaggerUi.setup(swaggerDocument),
+      swaggerUi.setup(swaggerDocument, {
+        swaggerOptions: { serverUrl: "/staging/backend" },
+      }),
     );
     console.log("✅ Swagger documentation initialized");
   } catch (err) {
