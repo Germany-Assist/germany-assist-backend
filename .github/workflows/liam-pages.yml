@@ -2,7 +2,7 @@ name: ERD Deployment
 
 on:
   push:
-    branches: ["**"]
+    branches: ["development"]
 
 permissions:
   contents: read
