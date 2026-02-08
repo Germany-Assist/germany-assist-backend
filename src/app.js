@@ -9,6 +9,9 @@ import morganMiddleware from "./middlewares/morgan.middleware.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import { AppError } from "./utils/error.class.js";
 import { FRONTEND_URL } from "./configs/serverConfig.js";
+import swaggerDocument from "./docs/swagger.js";
+import swaggerUi from "swagger-ui-express";
+import setupSwagger from "./docs/swagger.js";
 
 export const app = express();
 
@@ -25,16 +28,17 @@ app.use(
   helmet({
     crossOriginOpenerPolicy: false,
     crossOriginResourcePolicy: false,
-  })
+  }),
 );
 app.use(
   cors({
     origin: FRONTEND_URL,
     credentials: true,
-  })
+  }),
 );
 app.set("trust proxy", 1);
 app.use(morganMiddleware);
+await setupSwagger(app);
 app.use("/api", apiRouter);
 app.get("/health", (_, res) => res.sendStatus(200));
 

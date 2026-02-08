@@ -1,0 +1,29 @@
+type: object
+required:
+  - firstName
+  - lastName
+  - email
+  - password
+properties:
+  firstName:
+    type: string
+    example: John
+  lastName:
+    type: string
+    example: Doe
+  email:
+    type: string
+    format: email
+    example: john.doe@example.com
+  password:
+    type: string
+    format: password
+    example: StrongPass123!
+  DOB:
+    type: string
+    format: date
+    example: 1990-01-01
+  image:
+    type: string
+    format: uri
+    example: https://example.com/profile.jpg

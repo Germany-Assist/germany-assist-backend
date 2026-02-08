@@ -1,0 +1,32 @@
+type: object
+properties:
+  firstName:
+    type: string
+    description: First name of the user
+    minLength: 2
+    maxLength: 50
+    pattern: '^[a-zA-Z\s''-]+$'
+  lastName:
+    type: string
+    description: Last name of the user
+    minLength: 2
+    maxLength: 50
+    pattern: '^[a-zA-Z\s''-]+$'
+  email:
+    type: string
+    format: email
+    description: Email address of the user
+  password:
+    type: string
+    description: Password for the user account
+    minLength: 8
+    pattern: '^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}$'
+  DOB:
+    type: string
+    format: date
+    description: Date of birth of the user (YYYY-MM-DD)
+  image:
+    type: string
+    format: url
+    description: URL of the user's profile image
+    pattern: '^.*\.(jpg|jpeg|png|gif)$'

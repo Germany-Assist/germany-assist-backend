@@ -1,0 +1,96 @@
+/user:
+  post:
+    tags: [User Management]
+    summary: Register a New Client
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../../openapi/components/schemas.yaml#/RegistrationInput"
+    responses:
+      201:
+        description: Client created. Sets refreshToken cookie.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accessToken: { type: string }
+                user:
+                  {
+                    $ref: "../../openapi/components/schemas.yaml#/UserResponse",
+                  }
+
+/user/admin:
+  post:
+    tags: [User Management]
+    summary: Register an Admin
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../../openapi/components/schemas.yaml#/RegistrationInput"
+    responses:
+      201:
+        description: Admin created.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  {
+                    $ref: "../../openapi/components/schemas.yaml#/UserResponse",
+                  }
+
+/user/rep:
+  post:
+    tags: [User Management]
+    summary: Register a Representative
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../../openapi/components/schemas.yaml#/RegistrationInput"
+    responses:
+      201:
+        description: Rep created.
+
+/user/root/rep:
+  get:
+    tags: [User Queries]
+    summary: Get Business Representatives
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: List of reps for the authenticated business.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../../openapi/components/schemas.yaml#/UserResponse"
+
+/user/admin/all:
+  get:
+    tags: [User Queries]
+    summary: Get All Registered Users
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: Full user list for admins.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "../../openapi/components/schemas.yaml#/UserResponse"

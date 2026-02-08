@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info:
+  title: Germany-Assist APIs Documentation
+  version: 0.1.9
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local server
+  - url: http://localhost:3001/api
+    description: Staging server
+  - url: http://api.example.com/v1
+    description: Production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /user:
+    $ref: "../modules/user/user.swagger.yaml#/~1user"
+  /user/admin:
+    $ref: "../modules/user/user.swagger.yaml#/~1user~1admin"
+  /user/rep:
+    $ref: "../modules/user/user.swagger.yaml#/~1user~1rep"
+  /user/root/rep:
+    $ref: "../modules/user/user.swagger.yaml#/~1user~1root~1rep"
+  /user/admin/all:
+    $ref: "../modules/user/user.swagger.yaml#/~1user~1admin~1all"
+  /timeline/client/readTimeline/{id}:
+    $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1client~1readTimeline~1{id}"
+  /timeline/provider/archiveTimeline/{id}:
+    $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1provider~1archiveTimeline~1{id}"
+  /timeline/provider/createNewTimeline:
+    $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1provider~1createNewTimeline"
+  /auth/google:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1google"
+  /auth/verifyAccount:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1verifyAccount"
+  /auth/login:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1login"
+  /auth/profile:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1profile"
+  /auth/refresh-token:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1refresh-token"
+  /auth/logout:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1logout"
+  /auth/admin/verify/{id}:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1admin~1verify~1{id}"

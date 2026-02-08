@@ -3,7 +3,6 @@ import timelineController from "./timeline.controller.js";
 import jwtUtils from "../../middlewares/jwt.middleware.js";
 import { idHashedParamValidator } from "../../validators/general.validators.js";
 import { validateExpress } from "../../middlewares/expressValidator.js";
-import { createTimelineValidator } from "./timeline.validator.js";
 const timelineRouter = Router();
 
 timelineRouter.get(

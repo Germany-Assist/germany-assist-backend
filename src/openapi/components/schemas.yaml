@@ -1,0 +1,66 @@
+# Shared Data Models
+UserResponse:
+  type: object
+  properties:
+    id: { type: string, example: "abc123hash" }
+    firstName: { type: string, example: "John" }
+    lastName: { type: string, example: "Doe" }
+    email: { type: string, format: email, example: "john@example.com" }
+    dob: { type: string, format: date, example: "1990-01-01" }
+    image: { type: string, format: uri }
+    imageKey: { type: string }
+    isVerified: { type: boolean }
+    role:
+      {
+        type: string,
+        enum: [client, admin, service_provider_root, service_provider_rep],
+      }
+    level: { type: string, example: "ready" }
+    favorites:
+      type: array
+      items:
+        type: object
+    orders:
+      type: array
+      items:
+        type: object
+
+RegistrationInput:
+  type: object
+  required:
+    - firstName
+    - lastName
+    - email
+    - password
+  properties:
+    firstName:
+      type: string
+      minLength: 2
+      maxLength: 50
+      pattern: "^[a-zA-Z\\s'-]+$" # Matches your regex
+      example: "John"
+    lastName:
+      type: string
+      minLength: 2
+      maxLength: 50
+      pattern: "^[a-zA-Z\\s'-]+$"
+      example: "Doe"
+    email:
+      type: string
+      format: email
+      example: "john@example.com"
+    password:
+      type: string
+      format: password
+      minLength: 8
+      # Matches: 1 Upper, 1 Lower, 1 Num, 1 Special
+      pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}$"
+    DOB:
+      type: string
+      format: date
+      example: "1995-12-25"
+    image:
+      type: string
+      format: uri
+      pattern: '\.(jpg|jpeg|png|gif)$'
+      example: "https://example.com/photo.jpg"
