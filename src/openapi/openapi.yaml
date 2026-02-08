@@ -39,12 +39,28 @@ paths:
     $ref: "../modules/dashboard/dashboard.swagger.yaml#/~1dashboard~1admin~1finance"
   /meta:
     $ref: "../modules/meta/meta.swagger.yaml#/~1meta"
+  /order/pay:
+    $ref: "../modules/order/order.swagger.yaml#/~1order~1pay"
+  /order/client/checkIfBought/{serviceId}:
+    $ref: "../modules/order/order.swagger.yaml#/~1order~1client~1checkIfBought~1{serviceId}"
+  /order/serviceProvider/getAll:
+    $ref: "../modules/order/order.swagger.yaml#/~1order~1serviceProvider~1getAll"
+  /order/client/getAll:
+    $ref: "../modules/order/order.swagger.yaml#/~1order~1client~1getAll"
+  /order/serviceProvider/close/{orderId}:
+    $ref: "../modules/order/order.swagger.yaml#/~1order~1serviceProvider~1close~1{orderId}"
+  /post/createNewPost:
+    $ref: "../modules/post/post.swagger.yaml#/~1post~1createNewPost"
   /timeline/client/readTimeline/{id}:
     $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1client~1readTimeline~1{id}"
   /timeline/provider/archiveTimeline/{id}:
     $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1provider~1archiveTimeline~1{id}"
-  /timeline/provider/createNewTimeline:
-    $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1provider~1createNewTimeline"
+  /timeline/provider/createNewTimeline/{serviceId}:
+    $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1provider~1createNewTimeline~1{serviceId}"
+  /variant/provider/archiveVariant/{id}:
+    $ref: "../modules/variant/variant.swagger.yaml#/~1variant~1provider~1archiveVariant~1{id}"
+  /variant/provider/createNewVariant:
+    $ref: "../modules/variant/variant.swagger.yaml#/~1variant~1provider~1createNewVariant"
   /auth/google:
     $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1google"
   /auth/verifyAccount:

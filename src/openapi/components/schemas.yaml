@@ -152,3 +152,298 @@ MetaResponse:
     message:
       type: string
       example: "Server is awake"
+
+OrderResponse:
+  oneOf:
+    - $ref: "#/OrderResponsePayout"
+    - $ref: "#/OrderResponseOrder"
+
+OrderResponsePayout:
+  type: object
+  properties:
+    type:
+      type: string
+      example: "payout"
+    orderId:
+      type: string
+      example: "orderIdHash1"
+    payoutId:
+      type: string
+      example: "payoutIdHash1"
+    serviceId:
+      type: string
+      example: "serviceIdHash1"
+    serviceType:
+      type: string
+      example: "timeline"
+    relatedId:
+      type: string
+      example: "relatedIdHash1"
+    buyerId:
+      type: string
+      example: "buyerIdHash1"
+    amount:
+      type: number
+      format: float
+      example: 10.50
+    amountToPay:
+      type: number
+      format: float
+      nullable: true
+      example: 9.99
+    status:
+      type: string
+      example: "pending"
+    currency:
+      type: string
+      example: "usd"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+    dispute:
+      type: object
+      nullable: true # Assuming dispute can be null
+      properties:
+        id:
+          type: string
+          example: "disputeIdHash1"
+        openedBy:
+          type: string
+          example: "client"
+        reason:
+          type: string
+          example: "Service not delivered"
+        status:
+          type: string
+          example: "open"
+        resolution:
+          type: string
+          nullable: true
+          example: "refund"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+OrderResponseOrder:
+  type: object
+  properties:
+    type:
+      type: string
+      example: "order"
+    orderId:
+      type: string
+      example: "orderIdHash2"
+    serviceId:
+      type: string
+      example: "serviceIdHash2"
+    serviceType:
+      type: string
+      example: "timeline"
+    relatedId:
+      type: string
+      example: "relatedIdHash2"
+    buyerId:
+      type: string
+      example: "buyerIdHash2"
+    amount:
+      type: number
+      format: float
+      example: 25.00
+    serviceTitle:
+      type: string
+      example: "Consultation Call"
+    status:
+      type: string
+      example: "active"
+    currency:
+      type: string
+      example: "usd"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+    dispute:
+      type: object
+      nullable: true # Assuming dispute can be null
+      properties:
+        id:
+          type: string
+          example: "disputeIdHash2"
+        openedBy:
+          type: string
+          example: "service_provider"
+        reason:
+          type: string
+          example: "Client did not respond"
+        status:
+          type: string
+          example: "resolved"
+        resolution:
+          type: string
+          nullable: true
+          example: "no refund"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+ClientSecretResponse:
+  type: object
+  properties:
+    clientSecret:
+      type: string
+      example: "pi_xxxxxxxxxxxxxx_secret_xxxxxxxxxxxxxx"
+
+SuccessResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+
+BoughtOptionsResponse:
+  type: object
+  properties:
+    boughtOptions:
+      type: array
+      items:
+        type: string
+        description: Hashed ID of a bought option
+      example: ["option1hash", "option2hash"]
+
+PostInput:
+  type: object
+  required:
+    - description
+    - timelineId
+  properties:
+    description:
+      type: string
+      minLength: 5
+      maxLength: 1000
+      example: "This is a detailed description of the post content."
+    isPinned:
+      type: boolean
+      example: false
+    timelineId:
+      type: string
+      example: "timelineIdHash1"
+
+PostResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "postIdHash1"
+    description:
+      type: string
+      example: "This is a detailed description of the post content."
+    isPinned:
+      type: boolean
+      example: false
+    timelineId:
+      type: string
+      example: "timelineIdHash1"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+TimelineResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "timelineIdHash"
+    label:
+      type: string
+      example: "Project Kick-off"
+    status:
+      type: string
+      example: "active"
+    serviceId:
+      type: string
+      example: "serviceIdHash"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+TimelineInput:
+  type: object
+  properties:
+    label:
+      type: string
+      isString: true
+      maxLength: 100
+      pattern: "^[\\w\\s-]*$" # Matches your regex
+      example: "Project Kick-off"
+
+VariantInput:
+  type: object
+  required:
+    - limit
+    - label
+    - price
+    - serviceId
+  properties:
+    limit:
+      type: integer
+      format: int32
+      example: 10
+    label:
+      type: string
+      example: "Basic Plan"
+    price:
+      type: number
+      format: float
+      example: 19.99
+    serviceId:
+      type: string
+      example: "serviceIdHash1"
+
+VariantResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "variantIdHash1"
+    limit:
+      type: integer
+      format: int32
+      example: 10
+    label:
+      type: string
+      example: "Basic Plan"
+    price:
+      type: number
+      format: float
+      example: 19.99
+    serviceId:
+      type: string
+      example: "serviceIdHash1"
+    isArchived:
+      type: boolean
+      example: false
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+

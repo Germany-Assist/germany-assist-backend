@@ -1,0 +1,93 @@
+/order/pay:
+  get:
+    tags: [Order]
+    summary: Pay for an order
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Successful payment confirmation.
+        content:
+          application/json:
+            schema:
+              $ref: "../../openapi/components/schemas.yaml#/SuccessResponse"
+      '401':
+        description: Unauthorized
+/order/client/checkIfBought/{serviceId}:
+  get:
+    tags: [Order]
+    summary: Check if a client has bought a specific service
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service
+    responses:
+      '200':
+        description: Successful check, returns an array of hashed IDs of bought options.
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/BoughtOptionsResponse'
+      '401':
+        description: Unauthorized
+/order/serviceProvider/getAll:
+  get:
+    tags: [Order]
+    summary: Get all orders for a service provider
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../../openapi/components/schemas.yaml#/OrderResponse'
+      '401':
+        description: Unauthorized
+/order/client/getAll:
+  get:
+    tags: [Order]
+    summary: Get all orders for a client
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../../openapi/components/schemas.yaml#/OrderResponse'
+      '401':
+        description: Unauthorized
+/order/serviceProvider/close/{orderId}:
+  get:
+    tags: [Order]
+    summary: Close an order as a service provider
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: orderId
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the order
+    responses:
+      '200':
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '401':
+        description: Unauthorized
