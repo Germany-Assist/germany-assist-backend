@@ -1,0 +1,21 @@
+/post/createNewPost:
+  post:
+    tags: [Post Management]
+    summary: Create a new post
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../../openapi/components/schemas.yaml#/PostInput"
+    responses:
+      201:
+        description: Post created successfully
+        content:
+          application/json:
+            schema:
+              $ref: "../../openapi/components/schemas.yaml#/PostResponse"
+      400:
+        description: Invalid input

@@ -36,6 +36,7 @@
     "migrate": "node --env-file=dev.env ./src/database/migrations/migrate.js"
   },
   "dependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
     "@aws-sdk/client-s3": "^3.929.0",
     "@aws-sdk/s3-request-presigner": "^3.929.0",
     "@sentry/node": "^10.32.1",
@@ -64,9 +65,11 @@
     "sharp": "^0.34.4",
     "socket.io": "^4.8.1",
     "stripe": "^18.5.0",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "ioredis-mock": "^8.13.1",

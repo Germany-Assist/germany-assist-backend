@@ -13,7 +13,7 @@ import seedSubcategory from "./seeds/subcategory_seed.js";
 
 export async function initDatabase(exit = true) {
   try {
-    if (process.env.NODE_ENV == "test" || process.env.NODE_ENV == "dev") {
+    if (NODE_ENV == "test" || NODE_ENV == "dev" || NODE_ENV == "staging") {
       //Stage 1
       //Creates the skeleton
       console.log("creating skeleton ⌛");
@@ -54,6 +54,6 @@ export async function initDatabase(exit = true) {
     console.log(error);
   }
 }
-if (NODE_ENV === "dev") {
+if (NODE_ENV === "dev" || NODE_ENV == "staging") {
   await initDatabase();
 }

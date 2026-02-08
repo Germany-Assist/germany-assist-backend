@@ -1,0 +1,373 @@
+/service:
+  get:
+    tags: [Service]
+    summary: Get all approved and published services
+    responses:
+      '200':
+        description: List of services
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '401':
+        description: Unauthorized (if JWT is sent but invalid)
+/service/{id}:
+  get:
+    tags: [Service]
+    summary: Get service profile by ID
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service
+    responses:
+      '200':
+        description: Service data
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '404':
+        description: Service not found
+/service/provider:
+  post:
+    tags: [Service]
+    summary: Create a new service (Provider)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '../../openapi/components/schemas.yaml#/ServiceCreateInput'
+    responses:
+      '201':
+        description: Service created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '400':
+        description: Invalid input
+      '401':
+        description: Unauthorized
+/service/provider/services:
+  get:
+    tags: [Service]
+    summary: Get all services of the authenticated provider
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: List of services for the provider
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '401':
+        description: Unauthorized
+  put:
+    tags: [Service]
+    summary: Update a service (Provider)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi/components/schemas.yaml#/ServiceUpdateInput'
+    responses:
+      '200':
+        description: Service updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '400':
+        description: Invalid input
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/provider/services/{id}:
+  get:
+    tags: [Service]
+    summary: Get service profile for admin and service provider by ID
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service
+    responses:
+      '200':
+        description: Service data
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+  delete:
+    tags: [Service]
+    summary: Delete a service (Provider - soft delete)
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service to delete
+    responses:
+      '200':
+        description: Service deleted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/provider/services/status:
+  put:
+    tags: [Service]
+    summary: Alter service status (Provider)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi/components/schemas.yaml#/ServiceStatusUpdateInput'
+    responses:
+      '200':
+        description: Service status updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '400':
+        description: Invalid input
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/provider/services/unpublish/{serviceId}:
+  get:
+    tags: [Service]
+    summary: Unpublish a service (Provider)
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service to unpublish
+    responses:
+      '200':
+        description: Service unpublished successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/provider/services/publish/{serviceId}:
+  get:
+    tags: [Service]
+    summary: Publish a service (Provider)
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: serviceId
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service to publish
+    responses:
+      '200':
+        description: Service published successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/admin/services:
+  get:
+    tags: [Service]
+    summary: Get all services (Admin)
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: List of all services
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '401':
+        description: Unauthorized
+/service/admin/services/{id}:
+  get:
+    tags: [Service]
+    summary: Get service profile for admin by ID
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service
+    responses:
+      '200':
+        description: Service data
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/admin/services/{id}/restore:
+  post:
+    tags: [Service]
+    summary: Restore a deleted service (Admin)
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service to restore
+    responses:
+      '200':
+        description: Service restored successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/admin/services/status:
+  put:
+    tags: [Service]
+    summary: Alter service status (Admin)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi/components/schemas.yaml#/ServiceStatusUpdateInput'
+    responses:
+      '200':
+        description: Service status updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '400':
+        description: Invalid input
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/client/favorite/{id}:
+  put:
+    tags: [Service]
+    summary: Add service to favorites (Client)
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service to add to favorites
+    responses:
+      '200':
+        description: Service added to favorites successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+  delete:
+    tags: [Service]
+    summary: Remove service from favorites (Client)
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: Hashed ID of the service to remove from favorites
+    responses:
+      '200':
+        description: Service removed from favorites successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/SuccessResponse'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Service not found
+/service/client/services:
+  get:
+    tags: [Service]
+    summary: Get client's services
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: List of services for the client
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../../openapi/components/schemas.yaml#/ServiceResponse'
+      '401':
+        description: Unauthorized

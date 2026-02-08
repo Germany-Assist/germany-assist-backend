@@ -1,0 +1,67 @@
+# Timeline Module Routes
+/timeline/client/readTimeline/{id}:
+  get:
+    tags: [Timeline]
+    summary: Read Timeline (Client)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The hashed ID of the timeline
+        schema:
+          type: string
+    responses:
+      200:
+        description: Timeline data retrieved
+      401:
+        description: Unauthorized
+
+/timeline/provider/archiveTimeline/{id}:
+  put:
+    tags: [Timeline]
+    summary: Archive Timeline (Provider)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The hashed ID of the timeline to archive
+        schema:
+          type: string
+    responses:
+      200:
+        description: Timeline archived successfully
+
+/timeline/provider/createNewTimeline/{serviceId}:
+  post:
+    tags: [Timeline]
+    summary: Create New Timeline (Provider)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: serviceId
+        in: path
+        required: true
+        description: The hashed ID of the service this timeline belongs to
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "../../openapi/components/schemas.yaml#/TimelineInput"
+    responses:
+      '201':
+        description: Timeline created
+        content:
+          application/json:
+            schema:
+              $ref: "../../openapi/components/schemas.yaml#/TimelineResponse"
+      '400':
+        description: Invalid input
+      '401':
+        description: Unauthorized

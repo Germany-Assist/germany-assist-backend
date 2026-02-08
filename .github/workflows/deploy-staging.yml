@@ -1,0 +1,41 @@
+name: Deploy Backend App To Staging
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build (if applicable)
+        run: npm run build || echo "No build step"
+
+      - name: Copy files to server
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 22
+          script: |
+            cd /var/www/germany-assist-backend-staging || mkdir -p /var/www/germany-assist-backend-staging
+            cd /var/www/germany-assist-backend-staging
+            git fetch origin
+            git checkout development
+            git reset --hard origin/development
+            npm install 
+            pm2 restart ecosystem.config.cjs || pm2 start ecosystem.config.cjs

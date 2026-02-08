@@ -4,9 +4,10 @@ import { NODE_ENV } from "./serverConfig.js";
 import { debugLogger, errorLogger, infoLogger } from "../utils/loggers.js";
 
 const isTest = NODE_ENV === "test";
-
+const bullPrefix = `bullmq:${NODE_ENV}`;
 export const defaultQueueOptions = {
   connection: redis,
+  prefix: bullPrefix,
   defaultJobOptions: {
     attempts: 10,
     backoff: { type: "exponential", delay: 5000 },
@@ -32,24 +33,27 @@ export class QueueManager {
     }
 
     const queue = new Queue(name, { ...defaultQueueOptions, ...options });
-    const events = new QueueEvents(name, { connection: redis });
+    const events = new QueueEvents(name, {
+      connection: redis,
+      prefix: bullPrefix,
+    });
     (queue.listAllJobs = async () => {
       await listAllJobs(queue);
     })();
     events.on("waiting", ({ jobId }) =>
-      debugLogger(`[${name}] waiting ${jobId}`)
+      debugLogger(`[${name}] waiting ${jobId}`),
     );
     events.on("active", ({ jobId }) =>
-      debugLogger(`[${name}] active ${jobId}`)
+      debugLogger(`[${name}] active ${jobId}`),
     );
     events.on("completed", ({ jobId }) =>
-      debugLogger(`[${name}] completed ${jobId}`)
+      debugLogger(`[${name}] completed ${jobId}`),
     );
     events.on("failed", ({ jobId, failedReason }) =>
-      errorLogger(`[${name}] failed ${jobId}`, failedReason)
+      errorLogger(`[${name}] failed ${jobId}`, failedReason),
     );
     events.on("error", (err) =>
-      errorLogger(`[${name}] QueueEvents error`, err)
+      errorLogger(`[${name}] QueueEvents error`, err),
     );
 
     this.queues.set(name, queue);
@@ -62,15 +66,16 @@ export class QueueManager {
     debugLogger(`creating ${name} worker`);
     const worker = new Worker(name, processor, {
       connection: redis,
+      prefix: bullPrefix,
       concurrency: 1,
       autorun: true,
       ...options,
     });
     worker.on("completed", (job) =>
-      infoLogger(`[${name}] job ${job.id} completed`)
+      infoLogger(`[${name}] job ${job.id} completed`),
     );
     worker.on("failed", (job, err) =>
-      errorLogger(`[${name}] job ${job.id} failed`, err)
+      errorLogger(`[${name}] job ${job.id} failed`, err),
     );
     worker.on("error", (err) => errorLogger(`[${name}] worker error`, err));
 
