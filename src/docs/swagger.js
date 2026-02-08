@@ -1,3 +1,6 @@
+import swaggerUi from "swagger-ui-express";
+import SwaggerParser from "@apidevtools/swagger-parser";
+import path from "path";
 export default async function setupSwagger(app) {
   try {
     const rootPath = path.join(process.cwd(), "src/openapi/openapi.yaml");
