@@ -61,6 +61,34 @@ paths:
     $ref: "../modules/variant/variant.swagger.yaml#/~1variant~1provider~1archiveVariant~1{id}"
   /variant/provider/createNewVariant:
     $ref: "../modules/variant/variant.swagger.yaml#/~1variant~1provider~1createNewVariant"
+  /service:
+    $ref: "../modules/service/service.swagger.yaml#/~1service"
+  /service/{id}:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1{id}"
+  /service/provider:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1provider"
+  /service/provider/services:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1provider~1services"
+  /service/provider/services/{id}:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1provider~1services~1{id}"
+  /service/provider/services/status:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1provider~1services~1status"
+  /service/provider/services/unpublish/{serviceId}:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1provider~1services~1unpublish~1{serviceId}"
+  /service/provider/services/publish/{serviceId}:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1provider~1services~1publish~1{serviceId}"
+  /service/admin/services:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1admin~1services"
+  /service/admin/services/{id}:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1admin~1services~1{id}"
+  /service/admin/services/{id}/restore:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1admin~1services~1{id}~1restore"
+  /service/admin/services/status:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1admin~1services~1status"
+  /service/client/favorite/{id}:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1client~1favorite~1{id}"
+  /service/client/services:
+    $ref: "../modules/service/service.swagger.yaml#/~1service~1client~1services"
   /auth/google:
     $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1google"
   /auth/verifyAccount:

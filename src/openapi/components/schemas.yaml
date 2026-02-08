@@ -447,3 +447,103 @@ VariantResponse:
       format: date-time
 
 
+ServiceCreateInput:
+  type: object
+  required:
+    - title
+    - description
+    - category
+  properties:
+    title:
+      type: string
+      minLength: 3
+      maxLength: 50
+      example: "Website Design Package"
+    description:
+      type: string
+      minLength: 10
+      maxLength: 5000
+      example: "Comprehensive website design and development services."
+    category:
+      type: string
+      example: "Web Development"
+    image:
+      type: string
+      format: uri
+      example: "https://example.com/service_image.jpg"
+    publish:
+      type: boolean
+      example: false
+    # Images will be handled by multipart/form-data directly in the path definition
+
+ServiceUpdateInput:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "serviceIdHash"
+    title:
+      type: string
+      minLength: 3
+      maxLength: 50
+      example: "Updated Website Design Package"
+    description:
+      type: string
+      minLength: 10
+      maxLength: 5000
+      example: "Updated comprehensive website design and development services."
+    image:
+      type: string
+      format: uri
+      example: "https://example.com/new_service_image.jpg"
+    # Other fields (e.g., category, publish) might be here if allowed to be updated
+
+ServiceStatusUpdateInput:
+  type: object
+  required:
+    - serviceId
+    - status
+  properties:
+    serviceId:
+      type: string
+      example: "serviceIdHash"
+    status:
+      type: string
+      enum: [pending, approved, rejected, archived] # Example statuses
+      example: "approved"
+
+ServiceResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "serviceIdHash"
+    title:
+      type: string
+      example: "Website Design Package"
+    description:
+      type: string
+      example: "Comprehensive website design and development services."
+    category:
+      type: string
+      example: "Web Development"
+    image:
+      type: string
+      format: uri
+      example: "https://example.com/service_image.jpg"
+    status:
+      type: string
+      example: "approved"
+    isPublished:
+      type: boolean
+      example: true
+    provider:
+      $ref: "#/UserResponse" # Assuming service has a provider user
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+
