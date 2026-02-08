@@ -8,7 +8,7 @@ import paymentsRouter from "./modules/payment/payments.routes.js";
 import morganMiddleware from "./middlewares/morgan.middleware.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import { AppError } from "./utils/error.class.js";
-import { FRONTEND_URL } from "./configs/serverConfig.js";
+import { FRONTEND_URL, NODE_ENV } from "./configs/serverConfig.js";
 import swaggerDocument from "./docs/swagger.js";
 import swaggerUi from "swagger-ui-express";
 import setupSwagger from "./docs/swagger.js";
@@ -38,7 +38,7 @@ app.use(
 );
 app.set("trust proxy", 1);
 app.use(morganMiddleware);
-await setupSwagger(app);
+if (NODE_ENV !== "production") await setupSwagger(app);
 app.use("/api", apiRouter);
 app.get("/health", (_, res) => res.sendStatus(200));
 
