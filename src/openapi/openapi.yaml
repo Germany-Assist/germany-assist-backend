@@ -7,9 +7,7 @@ servers:
   - url: http://localhost:3000/api
     description: Local server
   - url: http://localhost:3001/api
-    description: Staging server
-  - url: http://api.example.com/v1
-    description: Production server
+    description: Staging server From within the Server it self
 
 components:
   securitySchemes:
