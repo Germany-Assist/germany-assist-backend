@@ -8,7 +8,11 @@ export default async function setupSwagger(app) {
 
     const swaggerDocument = await SwaggerParser.bundle(rootPath);
 
-    app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+    app.use(
+      "/staging/backend/docs",
+      swaggerUi.serve,
+      swaggerUi.setup(swaggerDocument),
+    );
     console.log("✅ Swagger documentation initialized");
   } catch (err) {
     console.error("❌ Swagger Load Error:", err);
