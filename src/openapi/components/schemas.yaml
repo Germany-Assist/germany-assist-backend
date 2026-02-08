@@ -1,0 +1,549 @@
+# Shared Data Models
+UserResponse:
+  type: object
+  properties:
+    id: { type: string, example: "abc123hash" }
+    firstName: { type: string, example: "John" }
+    lastName: { type: string, example: "Doe" }
+    email: { type: string, format: email, example: "john@example.com" }
+    dob: { type: string, format: date, example: "1990-01-01" }
+    image: { type: string, format: uri }
+    imageKey: { type: string }
+    isVerified: { type: boolean }
+    role:
+      {
+        type: string,
+        enum: [client, admin, service_provider_root, service_provider_rep],
+      }
+    level: { type: string, example: "ready" }
+    favorites:
+      type: array
+      items:
+        type: object
+    orders:
+      type: array
+      items:
+        type: object
+
+RegistrationInput:
+  type: object
+  required:
+    - firstName
+    - lastName
+    - email
+    - password
+  properties:
+    firstName:
+      type: string
+      minLength: 2
+      maxLength: 50
+      pattern: "^[a-zA-Z\\s'-]+$" # Matches your regex
+      example: "John"
+    lastName:
+      type: string
+      minLength: 2
+      maxLength: 50
+      pattern: "^[a-zA-Z\\s'-]+$"
+      example: "Doe"
+    email:
+      type: string
+      format: email
+      example: "john@example.com"
+    password:
+      type: string
+      format: password
+      minLength: 8
+      # Matches: 1 Upper, 1 Lower, 1 Num, 1 Special
+      pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,}$"
+    DOB:
+      type: string
+      format: date
+      example: "1995-12-25"
+    image:
+      type: string
+      format: uri
+      pattern: '\.(jpg|jpeg|png|gif)$'
+      example: "https://example.com/photo.jpg"
+
+CommentInput:
+  type: object
+  required:
+    - body
+    - postId
+  properties:
+    body:
+      type: string
+      minLength: 2
+      maxLength: 500
+      example: "This is a great post!"
+    postId:
+      type: string
+      example: "abc123hash"
+    commentId:
+      type: string
+      example: "def456hash"
+
+CommentResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "xyz789hash"
+    body:
+      type: string
+      example: "This is a great post!"
+    author:
+      $ref: "#/UserResponse"
+    postId:
+      type: string
+      example: "abc123hash"
+    commentId:
+      type: string
+      example: "def456hash"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+ProviderFinance:
+  type: object
+  properties:
+    totalRevenue:
+      type: number
+      example: 10000
+    pendingPayout:
+      type: number
+      example: 2000
+    lastPayout:
+      type: number
+      example: 5000
+
+AdminServices:
+  type: object
+  properties:
+    totalServices:
+      type: integer
+      example: 150
+    activeServices:
+      type: integer
+      example: 120
+    pendingServices:
+      type: integer
+      example: 30
+
+AdminFinance:
+  type: object
+  properties:
+    totalPlatformRevenue:
+      type: number
+      example: 50000
+    totalPayouts:
+      type: number
+      example: 30000
+    pendingPayouts:
+      type: number
+      example: 10000
+
+MetaResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Server is awake"
+
+OrderResponse:
+  oneOf:
+    - $ref: "#/OrderResponsePayout"
+    - $ref: "#/OrderResponseOrder"
+
+OrderResponsePayout:
+  type: object
+  properties:
+    type:
+      type: string
+      example: "payout"
+    orderId:
+      type: string
+      example: "orderIdHash1"
+    payoutId:
+      type: string
+      example: "payoutIdHash1"
+    serviceId:
+      type: string
+      example: "serviceIdHash1"
+    serviceType:
+      type: string
+      example: "timeline"
+    relatedId:
+      type: string
+      example: "relatedIdHash1"
+    buyerId:
+      type: string
+      example: "buyerIdHash1"
+    amount:
+      type: number
+      format: float
+      example: 10.50
+    amountToPay:
+      type: number
+      format: float
+      nullable: true
+      example: 9.99
+    status:
+      type: string
+      example: "pending"
+    currency:
+      type: string
+      example: "usd"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+    dispute:
+      type: object
+      nullable: true # Assuming dispute can be null
+      properties:
+        id:
+          type: string
+          example: "disputeIdHash1"
+        openedBy:
+          type: string
+          example: "client"
+        reason:
+          type: string
+          example: "Service not delivered"
+        status:
+          type: string
+          example: "open"
+        resolution:
+          type: string
+          nullable: true
+          example: "refund"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+OrderResponseOrder:
+  type: object
+  properties:
+    type:
+      type: string
+      example: "order"
+    orderId:
+      type: string
+      example: "orderIdHash2"
+    serviceId:
+      type: string
+      example: "serviceIdHash2"
+    serviceType:
+      type: string
+      example: "timeline"
+    relatedId:
+      type: string
+      example: "relatedIdHash2"
+    buyerId:
+      type: string
+      example: "buyerIdHash2"
+    amount:
+      type: number
+      format: float
+      example: 25.00
+    serviceTitle:
+      type: string
+      example: "Consultation Call"
+    status:
+      type: string
+      example: "active"
+    currency:
+      type: string
+      example: "usd"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+    dispute:
+      type: object
+      nullable: true # Assuming dispute can be null
+      properties:
+        id:
+          type: string
+          example: "disputeIdHash2"
+        openedBy:
+          type: string
+          example: "service_provider"
+        reason:
+          type: string
+          example: "Client did not respond"
+        status:
+          type: string
+          example: "resolved"
+        resolution:
+          type: string
+          nullable: true
+          example: "no refund"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+ClientSecretResponse:
+  type: object
+  properties:
+    clientSecret:
+      type: string
+      example: "pi_xxxxxxxxxxxxxx_secret_xxxxxxxxxxxxxx"
+
+SuccessResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+
+BoughtOptionsResponse:
+  type: object
+  properties:
+    boughtOptions:
+      type: array
+      items:
+        type: string
+        description: Hashed ID of a bought option
+      example: ["option1hash", "option2hash"]
+
+PostInput:
+  type: object
+  required:
+    - description
+    - timelineId
+  properties:
+    description:
+      type: string
+      minLength: 5
+      maxLength: 1000
+      example: "This is a detailed description of the post content."
+    isPinned:
+      type: boolean
+      example: false
+    timelineId:
+      type: string
+      example: "timelineIdHash1"
+
+PostResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "postIdHash1"
+    description:
+      type: string
+      example: "This is a detailed description of the post content."
+    isPinned:
+      type: boolean
+      example: false
+    timelineId:
+      type: string
+      example: "timelineIdHash1"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+TimelineResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "timelineIdHash"
+    label:
+      type: string
+      example: "Project Kick-off"
+    status:
+      type: string
+      example: "active"
+    serviceId:
+      type: string
+      example: "serviceIdHash"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+TimelineInput:
+  type: object
+  properties:
+    label:
+      type: string
+      isString: true
+      maxLength: 100
+      pattern: "^[\\w\\s-]*$" # Matches your regex
+      example: "Project Kick-off"
+
+VariantInput:
+  type: object
+  required:
+    - limit
+    - label
+    - price
+    - serviceId
+  properties:
+    limit:
+      type: integer
+      format: int32
+      example: 10
+    label:
+      type: string
+      example: "Basic Plan"
+    price:
+      type: number
+      format: float
+      example: 19.99
+    serviceId:
+      type: string
+      example: "serviceIdHash1"
+
+VariantResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "variantIdHash1"
+    limit:
+      type: integer
+      format: int32
+      example: 10
+    label:
+      type: string
+      example: "Basic Plan"
+    price:
+      type: number
+      format: float
+      example: 19.99
+    serviceId:
+      type: string
+      example: "serviceIdHash1"
+    isArchived:
+      type: boolean
+      example: false
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+
+ServiceCreateInput:
+  type: object
+  required:
+    - title
+    - description
+    - category
+  properties:
+    title:
+      type: string
+      minLength: 3
+      maxLength: 50
+      example: "Website Design Package"
+    description:
+      type: string
+      minLength: 10
+      maxLength: 5000
+      example: "Comprehensive website design and development services."
+    category:
+      type: string
+      example: "Web Development"
+    image:
+      type: string
+      format: uri
+      example: "https://example.com/service_image.jpg"
+    publish:
+      type: boolean
+      example: false
+    # Images will be handled by multipart/form-data directly in the path definition
+
+ServiceUpdateInput:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "serviceIdHash"
+    title:
+      type: string
+      minLength: 3
+      maxLength: 50
+      example: "Updated Website Design Package"
+    description:
+      type: string
+      minLength: 10
+      maxLength: 5000
+      example: "Updated comprehensive website design and development services."
+    image:
+      type: string
+      format: uri
+      example: "https://example.com/new_service_image.jpg"
+    # Other fields (e.g., category, publish) might be here if allowed to be updated
+
+ServiceStatusUpdateInput:
+  type: object
+  required:
+    - serviceId
+    - status
+  properties:
+    serviceId:
+      type: string
+      example: "serviceIdHash"
+    status:
+      type: string
+      enum: [pending, approved, rejected, archived] # Example statuses
+      example: "approved"
+
+ServiceResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "serviceIdHash"
+    title:
+      type: string
+      example: "Website Design Package"
+    description:
+      type: string
+      example: "Comprehensive website design and development services."
+    category:
+      type: string
+      example: "Web Development"
+    image:
+      type: string
+      format: uri
+      example: "https://example.com/service_image.jpg"
+    status:
+      type: string
+      example: "approved"
+    isPublished:
+      type: boolean
+      example: true
+    provider:
+      $ref: "#/UserResponse" # Assuming service has a provider user
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+

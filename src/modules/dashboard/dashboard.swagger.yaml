@@ -1,0 +1,45 @@
+/dashboard/provider/finance:
+  get:
+    tags: [Dashboard]
+    summary: Get financial data for a service provider
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/ProviderFinance'
+      '401':
+        description: Unauthorized
+/dashboard/admin/services:
+  get:
+    tags: [Dashboard]
+    summary: Get statistical data about services for admins
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/AdminServices'
+      '401':
+        description: Unauthorized
+/dashboard/admin/finance:
+  get:
+    tags: [Dashboard]
+    summary: Get statistical financial data for admins
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/AdminFinance'
+      '401':
+        description: Unauthorized
