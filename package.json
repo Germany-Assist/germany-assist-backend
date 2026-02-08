@@ -31,12 +31,16 @@
     "test": "node --env-file=test.env ./tests/index.js",
     "workflowTest": "node  ./tests/index.js",
     "export": "node --env-file=dev.env  ./src/database/export.js",
-    "seed": "node --env-file=dev.env ./src/database/seed.js"
+    "seed": "node --env-file=dev.env ./src/database/seed.js",
+    "seed:test": "node --env-file=dev.env ./src/database/seeds/runTestDataSeed.js",
+    "migrate": "node --env-file=dev.env ./src/database/migrations/migrate.js"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
     "@aws-sdk/client-s3": "^3.929.0",
     "@aws-sdk/s3-request-presigner": "^3.929.0",
+    "@sentry/node": "^10.32.1",
+    "@sentry/tracing": "^7.120.4",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.58.7",

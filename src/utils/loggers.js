@@ -3,6 +3,9 @@ import DailyRotateFile from "winston-daily-rotate-file";
 import { v4 as uuidv4 } from "uuid";
 import { LOG_LEVEL, NODE_ENV } from "../configs/serverConfig.js";
 import util from "node:util";
+import { captureError } from "./sentry.util.js";
+import { error } from "node:console";
+
 const levels = {
   error: 0,
   warn: 1,
@@ -21,13 +24,13 @@ winston.loggers.add("errorLogger", {
       const meta = metadata?.error || metadata;
       if (meta && Object.keys(meta).length > 0) {
         if (meta && typeof meta === "object") {
-          const { statusCode, headers, requestId } = meta;
+          const { statusCode, headers, trace } = meta;
           let safeResponse;
           try {
             safeResponse = JSON.stringify({
               statusCode,
               headers: headers ? Object.keys(headers).slice(0, 5) : undefined,
-              requestId,
+              trace,
             });
           } catch {
             safeResponse = util.inspect(meta, { depth: 2 });
@@ -107,4 +110,9 @@ winston.loggers.add("debugLogger", {
 export const debugLogger = winston.loggers.get("debugLogger").debug;
 export const infoLogger = winston.loggers.get("debugLogger").info;
 export const httpLogger = winston.loggers.get("httpLogger").http;
-export const errorLogger = winston.loggers.get("errorLogger").error;
+export const rawErrorLogger = winston.loggers.get("errorLogger").error;
+
+export const errorLogger = (error) => {
+  rawErrorLogger(error);
+  captureError(error);
+};

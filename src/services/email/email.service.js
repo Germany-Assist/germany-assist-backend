@@ -1,14 +1,11 @@
 import nodemailer from "nodemailer";
 import { errorLogger, infoLogger } from "../../utils/loggers.js";
-import crypto from "crypto";
-import db from "../../database/index.js";
 import {
   EMAIL_HOST,
   EMAIL_PASS,
   EMAIL_SMTP_PORT,
   EMAIL_USER,
 } from "../../configs/email.config.js";
-import verificationEmailTemplate from "./templates/verificationEmailTemplate.js";
 
 class EmailService {
   constructor() {

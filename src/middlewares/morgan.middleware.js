@@ -9,10 +9,7 @@ const stream = {
   write: (message) => httpLogger(message),
 };
 // skiping is disabled
-const skip = () => {
-  const env = NODE_ENV || "dev";
-  return env !== "dev";
-};
+
 morgan.token("requestId", (req) => req.requestId);
 const morganMiddleware = morgan(
   ":method :url :status :res[content-length] - :response-time ms  [:requestId]",

@@ -167,6 +167,24 @@ npm run seed # Seed DB from exported JSON
 
 - Default path: ./database/seeds/data
 
+### Test Data Seeding
+
+To populate your local database with comprehensive test data for development and testing:
+
+```
+npm run seed:test
+```
+
+**Prerequisites:**
+- Database must be initialized first (run `npm run dbInit` if you haven't already)
+- This will create test data in your existing database (does not drop existing data)
+
+**Note:** 
+- All other test users have the password: `Test123!@#`
+- Data is randomly generated but respects foreign key relationships
+- Service-related data is emphasized as requested
+- This script is safe to run multiple times (it will add more data each time, but the default user will only be created once)
+
 ---
 
 ## 🪵 Logging
