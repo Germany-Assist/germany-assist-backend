@@ -31,6 +31,14 @@ paths:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1admin~1all"
   /comment:
     $ref: "../modules/comment/comment.swagger.yaml#/~1comment"
+  /dashboard/provider/finance:
+    $ref: "../modules/dashboard/dashboard.swagger.yaml#/~1dashboard~1provider~1finance"
+  /dashboard/admin/services:
+    $ref: "../modules/dashboard/dashboard.swagger.yaml#/~1dashboard~1admin~1services"
+  /dashboard/admin/finance:
+    $ref: "../modules/dashboard/dashboard.swagger.yaml#/~1dashboard~1admin~1finance"
+  /meta:
+    $ref: "../modules/meta/meta.swagger.yaml#/~1meta"
   /timeline/client/readTimeline/{id}:
     $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1client~1readTimeline~1{id}"
   /timeline/provider/archiveTimeline/{id}:

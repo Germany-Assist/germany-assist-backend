@@ -106,3 +106,49 @@ CommentResponse:
     updatedAt:
       type: string
       format: date-time
+
+ProviderFinance:
+  type: object
+  properties:
+    totalRevenue:
+      type: number
+      example: 10000
+    pendingPayout:
+      type: number
+      example: 2000
+    lastPayout:
+      type: number
+      example: 5000
+
+AdminServices:
+  type: object
+  properties:
+    totalServices:
+      type: integer
+      example: 150
+    activeServices:
+      type: integer
+      example: 120
+    pendingServices:
+      type: integer
+      example: 30
+
+AdminFinance:
+  type: object
+  properties:
+    totalPlatformRevenue:
+      type: number
+      example: 50000
+    totalPayouts:
+      type: number
+      example: 30000
+    pendingPayouts:
+      type: number
+      example: 10000
+
+MetaResponse:
+  type: object
+  properties:
+    message:
+      type: string
+      example: "Server is awake"
