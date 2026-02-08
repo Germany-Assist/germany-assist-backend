@@ -29,6 +29,8 @@ paths:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1root~1rep"
   /user/admin/all:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1admin~1all"
+  /comment:
+    $ref: "../modules/comment/comment.swagger.yaml#/~1comment"
   /timeline/client/readTimeline/{id}:
     $ref: "../modules/timeline/timeline.swagger.yaml#/~1timeline~1client~1readTimeline~1{id}"
   /timeline/provider/archiveTimeline/{id}:

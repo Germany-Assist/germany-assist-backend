@@ -64,3 +64,45 @@ RegistrationInput:
       format: uri
       pattern: '\.(jpg|jpeg|png|gif)$'
       example: "https://example.com/photo.jpg"
+
+CommentInput:
+  type: object
+  required:
+    - body
+    - postId
+  properties:
+    body:
+      type: string
+      minLength: 2
+      maxLength: 500
+      example: "This is a great post!"
+    postId:
+      type: string
+      example: "abc123hash"
+    commentId:
+      type: string
+      example: "def456hash"
+
+CommentResponse:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "xyz789hash"
+    body:
+      type: string
+      example: "This is a great post!"
+    author:
+      $ref: "#/UserResponse"
+    postId:
+      type: string
+      example: "abc123hash"
+    commentId:
+      type: string
+      example: "def456hash"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
