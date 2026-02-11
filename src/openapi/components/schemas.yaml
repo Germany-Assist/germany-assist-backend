@@ -446,7 +446,6 @@ VariantResponse:
       type: string
       format: date-time
 
-
 ServiceCreateInput:
   type: object
   required:
@@ -537,8 +536,6 @@ ServiceResponse:
     isPublished:
       type: boolean
       example: true
-    provider:
-      $ref: "#/UserResponse" # Assuming service has a provider user
     createdAt:
       type: string
       format: date-time
@@ -546,4 +543,57 @@ ServiceResponse:
       type: string
       format: date-time
 
-
+ServicesResponse:
+  type: object
+  properties:
+    page:
+      type: integer
+      format: int32
+      example: 1
+    limit:
+      type: integer
+      format: int32
+      example: 10
+    total:
+      type: integer
+      format: int32
+      example: 2
+    totalPages:
+      type: integer
+      format: int32
+      example: 1
+    data:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            example: "bBtV"
+          title:
+            type: string
+            example: "Website Design Package"
+          description:
+            type: string
+            example: "Comprehensive website design and development services."
+          category:
+            type: string
+            example: "Web Development"
+          image:
+            type: string
+            format: uri
+            example: "https://example.com/service_image.jpg"
+          status:
+            type: string
+            example: "approved"
+          isPublished:
+            type: boolean
+            example: true
+          createdAt:
+            type: string
+            format: date-time
+            example: "2026-02-09T12:00:00Z"
+          updatedAt:
+            type: string
+            format: date-time
+            example: "2026-02-09T12:00:00Z"

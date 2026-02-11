@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 import db from "../../database/index.js";
 import hashIdUtil from "../../utils/hashId.util.js";
+import { AppError } from "../../utils/error.class.js";
 
 async function createNewComment(body, auth, t) {
   const postId = hashIdUtil.hashIdDecode(body.postId);
@@ -29,6 +30,7 @@ async function canCommentOnPost(userId, postId) {
         include: [
           {
             model: db.Order,
+            as: "orders",
             attributes: [],
             required: true,
             where: {

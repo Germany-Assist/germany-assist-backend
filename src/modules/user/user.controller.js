@@ -16,10 +16,9 @@ export async function createClientController(req, res, next) {
 
 export async function createRepController(req, res, next) {
   try {
-    const result = userServices.registerRep(req.body, req.auth);
+    const result = await userServices.registerRep(req.body, req.auth);
     res.status(201).json({ user: result.user });
   } catch (error) {
-    await t.rollback();
     next(error);
   }
 }

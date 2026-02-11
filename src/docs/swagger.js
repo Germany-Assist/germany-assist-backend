@@ -1,20 +1,18 @@
 import swaggerUi from "swagger-ui-express";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import path from "path";
+
 export default async function setupSwagger(app) {
   try {
     const rootPath = path.join(process.cwd(), "src/openapi/openapi.yaml");
     const swaggerDocument = await SwaggerParser.bundle(rootPath);
-
-    // Tell the "Try it out" button exactly where to go via http
     swaggerDocument.servers = [
       { url: "http://www.germany-assist.com/staging/backend/api" },
+      { url: "/api" },
     ];
-
     app.use(
       "/docs",
       (req, res, next) => {
-        // This tells the browser: "Do NOT upgrade to HTTPS, and stay on HTTP"
         res.removeHeader("Content-Security-Policy");
         res.setHeader(
           "Content-Security-Policy",
@@ -24,9 +22,12 @@ export default async function setupSwagger(app) {
       },
       swaggerUi.serve,
       swaggerUi.setup(swaggerDocument, {
-        // We use relative paths to avoid the domain name entirely
         customCssUrl: "swagger-ui.css",
-        customJs: ["swagger-ui-bundle.js", "swagger-ui-standalone-preset.js"],
+        customJs: [
+          "swagger-ui-bundle.js",
+          "swagger-ui-standalone-preset.js",
+          "/__swagger-dev/swagger-checkbox.js",
+        ],
       }),
     );
     console.log("✅ Swagger documentation initialized");

@@ -27,7 +27,7 @@ paths:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1root~1rep"
   /user/admin/all:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1admin~1all"
-  /comment:
+  /post/comment:
     $ref: "../modules/comment/comment.swagger.yaml#/~1comment"
   /dashboard/provider/finance:
     $ref: "../modules/dashboard/dashboard.swagger.yaml#/~1dashboard~1provider~1finance"

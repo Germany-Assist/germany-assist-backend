@@ -13,7 +13,7 @@ router.post(
   ]),
   jwtUtils.authenticateJwt,
   verificationRequestController.createProvider,
-); // Create request
+);
 router.put(
   "/provider",
   multerUpload.fields([
@@ -22,7 +22,7 @@ router.put(
   ]),
   jwtUtils.authenticateJwt,
   verificationRequestController.updateProvider,
-); // Create request
+);
 router.get(
   "/provider/profile",
   jwtUtils.authenticateJwt,

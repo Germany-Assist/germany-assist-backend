@@ -47,7 +47,7 @@ export async function totalServices() {
 }
 export async function totalLiveServices() {
   return await db.Service.count({
-    where: { approved: false, rejected: false, published: true },
+    where: { approved: true, rejected: false, published: true },
   });
 }
 export async function totalPendingServices() {
