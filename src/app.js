@@ -12,6 +12,7 @@ import { FRONTEND_URL, NODE_ENV } from "./configs/serverConfig.js";
 import swaggerDocument from "./docs/swagger.js";
 import swaggerUi from "swagger-ui-express";
 import setupSwagger from "./docs/swagger.js";
+import path from "node:path";
 
 export const app = express();
 
@@ -38,7 +39,13 @@ app.use(
 );
 app.set("trust proxy", 1);
 app.use(morganMiddleware);
-if (NODE_ENV !== "production") await setupSwagger(app);
+if (NODE_ENV !== "production") {
+  app.use(
+    "/__swagger-dev",
+    express.static(path.join(process.cwd(), "src/docs/swagger-dev")),
+  );
+  await setupSwagger(app);
+}
 app.use("/api", apiRouter);
 app.get("/health", (_, res) => res.sendStatus(200));
 

@@ -23,7 +23,7 @@ export function errorMiddleware(err, req, res, next) {
   if (err instanceof UniqueConstraintError) {
     res.status(422).json({
       success: false,
-      message: "Resource already exists",
+      message: err.message ? err.message : "Resource already exists",
     });
     errorLogger(err);
     return;
