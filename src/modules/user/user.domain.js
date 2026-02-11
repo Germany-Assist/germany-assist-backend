@@ -1,3 +1,5 @@
+import { AppError } from "../../utils/error.class.js";
+
 function setRoleAndType(type) {
   let rootRole, rootRelatedType, firstName, lastName;
   switch (type) {

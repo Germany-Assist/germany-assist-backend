@@ -71,8 +71,7 @@ export const deleteUser = async (id) => {
 };
 export const alterUserVerification = async (id, status, t) => {
   const user = await db.User.findByPk(id);
-  if (!user)
-    throw new AppError(404, "User not found", true, "invalid credentials");
+  if (!user) throw new AppError(404, "User not found", true, "User not found");
   return await user.update({ isVerified: status }, { transaction: t });
 };
 

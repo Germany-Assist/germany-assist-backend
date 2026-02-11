@@ -30,7 +30,7 @@ export const registerClient = async (body) => {
           relatedId: null,
         },
       },
-      t
+      t,
     );
     await permissionServices.initPermissions(user.id, roleTemplates.client, t);
     const { accessToken, refreshToken } = jwtUtils.generateTokens(user);
@@ -56,10 +56,10 @@ export async function registerRep(body, auth) {
       ["service_provider_root", "employer_root"],
       true,
       "user",
-      "create"
+      "create",
     );
     if (!permission) throw new AppError(403, "forbidden", true, "forbidden");
-    const { role, relatedType } = userDomain.setRoleAndTypeRep(req.auth.role);
+    const { role, relatedType } = userDomain.setRoleAndTypeRep(auth.role);
     const { firstName, lastName, email, dob, image } = body;
     const password = bcryptUtil.hashPassword(body.password);
     const user = await userRepository.createUser(
@@ -74,10 +74,10 @@ export async function registerRep(body, auth) {
         UserRole: {
           role,
           relatedType,
-          relatedId: req.auth.relatedId,
+          relatedId: auth.relatedId,
         },
       },
-      t
+      t,
     );
     await permissionServices.initPermissions(user.id, roleTemplates[role], t);
     const sanitizedUser = await userMapper.sanitizeUser(user);
@@ -88,7 +88,7 @@ export async function registerRep(body, auth) {
     };
   } catch (error) {
     await t.rollback();
-    next(error);
+    throw error;
   }
 }
 
@@ -100,7 +100,7 @@ export async function registerAdmin(body, auth) {
       ["super_admin"],
       true,
       "admin",
-      "create"
+      "create",
     );
     const { firstName, lastName, email, dob, image } = body;
     const password = bcryptUtil.hashPassword(body.password);
@@ -119,7 +119,7 @@ export async function registerAdmin(body, auth) {
           relatedId: null,
         },
       },
-      t
+      t,
     );
     await permissionServices.initPermissions(user.id, roleTemplates.admin, t);
     const sanitizedUser = await userMapper.sanitizeUser(user);
@@ -140,7 +140,7 @@ export async function getAllUsers(auth) {
     ["admin", "superAdmin"],
     true,
     "user",
-    "read"
+    "read",
   );
   const users = await userRepository.getAllUsers();
   const sanitizedUsers = users.map(async (e) => {
@@ -155,7 +155,7 @@ export async function getReps(auth) {
     ["service_provider_root", "service_provider_rep"],
     true,
     "user",
-    "read"
+    "read",
   );
   const users = await userRepository.getBusinessReps(auth.relatedId);
   const sanitizedUsers = users.map(async (e) => {
