@@ -1,29 +1,24 @@
-import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
+import { handlers } from "./notification.handlers/index.js";
 import { errorLogger } from "../../utils/loggers.js";
-import handleCommentCreated from "./notification.handlers/handleComment.js";
-import handlePaymentSuccesses from "./notification.handlers/handlePaymentSuccesses.js";
-
-const handlers = {
-  [NOTIFICATION_EVENTS.PAYMENT_SUCCESS]: handlePaymentSuccesses,
-  [NOTIFICATION_EVENTS.COMMENT_CREATED]: handleCommentCreated,
-};
 
 async function notificationProcessor(job) {
-  const data = job.data;
-  if (!handlers[job.name]) {
-    errorLogger(`Unhandled notification event: ${job.name}`, {
-      jobId: job.id,
+  const { data, name, id } = job;
+  const handler = handlers[name];
+  if (!handler) {
+    errorLogger(`Unhandled notification event: ${name}`, {
+      jobId: id,
       data,
     });
     return;
   }
   try {
-    await handlers[job.name](data);
+    await handler(data);
   } catch (error) {
+    console.log(error);
     errorLogger({
-      jobId: job.id,
-      eventName: job.name,
-      userId: data.userId,
+      jobId: id,
+      eventName: name,
+      userId: data?.userId,
       error,
       stack: error.stack,
     });

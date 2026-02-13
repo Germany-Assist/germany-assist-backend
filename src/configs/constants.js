@@ -3,12 +3,29 @@ export const STRIPE_EVENTS = {
   PAYMENT_CREATED: "payment_intent.created",
   PAYMENT_FAILED: "payment_intent.payment_failed",
 };
+
 export const NOTIFICATION_EVENTS = {
-  PAYMENT_SUCCESS: "PAYMENT_SUCCESS",
-  COMMENT_CREATED: "COMMENT_CREATED",
-  VERIFICATION_EMAIL_SENT: "VERIFICATION_EMAIL_SENT",
-  VERIFICATION_ACCOUNT_RECEIVED: "VERIFICATION_ACCOUNT_RECEIVED",
+  SERVICE: {
+    CREATED: "service.created",
+    APPROVED: "service.approved",
+    REJECTED: "service.rejected",
+    PUBLISHED: "service.published",
+  },
+  ORDER: {
+    REFUNDED: "order.refunded",
+    ACTIVE: "order.active",
+    CLOSED: "order.closed",
+    COMPLETED: "order.completed",
+    REJECTED: "order.rejected",
+    CANCELED: "order.canceled",
+  },
+  DISPUTE: {
+    RAISED: "dispute.raised",
+    UPDATED: "dispute.updated",
+    CLOSED: "dispute.closed",
+  },
 };
+
 export const AUDIT_LOGS_CONSTANTS = {
   ORDER_CREATE: "order.create",
   ORDER_UPDATE: "order.update",

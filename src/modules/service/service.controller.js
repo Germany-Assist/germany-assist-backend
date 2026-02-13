@@ -31,7 +31,7 @@ export async function createService(req, res, next) {
       req.file.stream.resume();
     }
     await transaction.rollback();
-    return next(error);
+    next(error);
   }
 }
 

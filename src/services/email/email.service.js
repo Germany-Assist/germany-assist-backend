@@ -6,6 +6,7 @@ import {
   EMAIL_SMTP_PORT,
   EMAIL_USER,
 } from "../../configs/email.config.js";
+import { orderActiveEmail } from "./templates/orderActive.js";
 
 class EmailService {
   constructor() {
@@ -33,27 +34,10 @@ class EmailService {
     } catch (err) {
       errorLogger(
         `❌ Failed to send email for ${subject} to ${to}:`,
-        err.message
+        err.message,
       );
       throw err;
     }
-  }
-
-  async sendNotificationEmail(user, message, url = "") {
-    const html = `<p>${message}</p>${url ? `<a href="${url}">View</a>` : ""}`;
-    await this.sendEmail({ to: user.email, subject: "Notification", html });
-  }
-
-  async sendNotificationPaymentEmail(userEmail, providerEmail, message) {
-    const html = buildEmailTemplateForNotifications({
-      title: "Payment Confirmation",
-      message: message,
-      footerText: "Germany-Assist",
-    });
-    await Promise.all([
-      this.sendEmail({ to: userEmail, subject: "Payment success", html }),
-      this.sendEmail({ to: providerEmail, subject: "Payment success", html }),
-    ]);
   }
 }
 
