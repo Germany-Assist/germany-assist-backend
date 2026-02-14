@@ -46,6 +46,8 @@ export const defineConstrains = () => {
   });
 
   Payout.belongsTo(Order, { foreignKey: "orderId" });
+
+  Order.belongsTo(ServiceProvider, { foreignKey: "serviceProviderId" });
   Order.hasOne(Payout, { foreignKey: "orderId" });
   //variants
 

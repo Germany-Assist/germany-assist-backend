@@ -6,7 +6,6 @@ import {
   EMAIL_SMTP_PORT,
   EMAIL_USER,
 } from "../../configs/email.config.js";
-import { orderActiveEmail } from "./templates/orderActive.js";
 
 class EmailService {
   constructor() {

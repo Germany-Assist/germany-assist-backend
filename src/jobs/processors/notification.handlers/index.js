@@ -9,7 +9,7 @@ import { NOTIFICATION_EVENTS } from "../../../configs/constants.js";
 // Order
 // import handleOrderRefunded from "./order/order.refunded.js";
 import handleOrderActive from "./order/order.active.js";
-// import handleOrderClosed from "./order/order.closed.js";
+import handleOrderClosed from "./order/order.closed.js";
 // import handleOrderCompleted from "./order/order.completed.js";
 // import handleOrderRejected from "./order/order.rejected.js";
 // import handleOrderCanceled from "./order/order.canceled.js";
@@ -29,7 +29,7 @@ export const handlers = {
   // Order
   // [NOTIFICATION_EVENTS.ORDER.REFUNDED]: handleOrderRefunded,
   [NOTIFICATION_EVENTS.ORDER.ACTIVE]: handleOrderActive,
-  // [NOTIFICATION_EVENTS.ORDER.CLOSED]: handleOrderClosed,
+  [NOTIFICATION_EVENTS.ORDER.CLOSED]: handleOrderClosed,
   // [NOTIFICATION_EVENTS.ORDER.COMPLETED]: handleOrderCompleted,
   // [NOTIFICATION_EVENTS.ORDER.REJECTED]: handleOrderRejected,
   // [NOTIFICATION_EVENTS.ORDER.CANCELED]: handleOrderCanceled,

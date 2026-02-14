@@ -13,27 +13,36 @@ export async function shutdown(event, server, io) {
   infoLogger(`Shutdown initiated: ${event}`);
 
   try {
-    // handle shutdown
-    await Promise.allSettled([
-      io &&
-        new Promise((res) => {
-          io.close(() => res());
-        }),
+    // 1 Stop cron first
+    await shutdownCron();
 
-      server &&
-        new Promise((res, rej) =>
-          server.close((err) => (err ? rej(err) : res()))
-        ),
+    // 2 Stop sockets
+    if (io) {
+      await new Promise((res) => io.close(() => res()));
+    }
 
-      QueueManager.shutdownAll(),
-      disconnectRedis(),
-      sequelize?.close(),
-      shutdownCron(),
-    ]);
+    // 3 Stop HTTP server safely
+    if (server?.listening) {
+      await new Promise((res, rej) =>
+        server.close((err) => (err ? rej(err) : res())),
+      );
+    } else {
+      infoLogger("Server not running, skipping server.close()");
+    }
+
+    // 4 Stop BullMQ workers & events
+    await QueueManager.shutdownAll();
+
+    // 5 Close DB
+    await sequelize?.close();
+
+    // 6 Close Redis
+    await disconnectRedis();
 
     infoLogger("Shutdown complete");
+    process.exit(0);
   } catch (err) {
-    console.log(err);
     errorLogger("Shutdown failed", err);
+    process.exit(1);
   }
 }

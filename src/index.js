@@ -19,14 +19,13 @@ if (NODE_ENV !== "test") {
 
       infoLogger(`🚀 Server running on port ${SERVER_PORT}`);
       infoLogger(`🏗️  Mode: ${NODE_ENV}`);
-
       process.on("SIGINT", () => shutdown("SIGINT", server, io));
       process.on("SIGTERM", () => shutdown("SIGTERM", server, io));
       process.on("uncaughtException", (e) =>
-        shutdown(`UncaughtException: ${e}`, server, io)
+        shutdown(`UncaughtException: ${e}`, server, io),
       );
       process.on("unhandledRejection", (r) =>
-        shutdown(`UnhandledRejection: ${r}`, server, io)
+        shutdown(`UnhandledRejection: ${r}`, server, io),
       );
     } catch (err) {
       errorLogger(err);

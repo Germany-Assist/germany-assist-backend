@@ -133,6 +133,7 @@ export async function refreshUserToken(refreshToken) {
 
 export const loginUser = async (body) => {
   const { email, password } = body;
+  console.log(email);
   const user = await userRepository.loginUser(email);
   if (!user)
     throw new AppError(401, "User not found", true, "invalid credentials");

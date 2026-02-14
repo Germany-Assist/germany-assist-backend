@@ -4,22 +4,9 @@ import { sequelize } from "../../../../configs/database.js";
 import emailService from "../../../../services/email/email.service.js";
 import { AppError } from "../../../../utils/error.class.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
-import { orderActiveEmail } from "../../../../services/email/templates/orderActive.js";
+import { successfulPaymentEmail } from "../../../../services/email/templates/successfulPayment.js";
 
 async function handleOrderActive(data) {
-  // sample data coming from stripe processor passed from the notification processor
-  // const data = {
-  //   amount: pi.amount,
-  //   status: "active",
-  //   userId: metadata.userId,
-  //   serviceId: metadata.serviceId,
-  //   relatedId: metadata.relatedId,
-  //   relatedType: metadata.relatedType,
-  //   serviceProviderId: metadata.serviceProviderId,
-  //   stripePaymentIntentId: pi.id,
-  //   currency: "usd",
-  // };
-
   const {
     serviceId,
     userId,
@@ -28,60 +15,105 @@ async function handleOrderActive(data) {
     relatedId,
     amount,
   } = data;
+
+  // 1️⃣ Fetch data outside transaction
   const [user, service] = await Promise.all([
-    db.User.findByPk(userId, { attributes: ["email"] }),
+    db.User.findByPk(userId, { attributes: ["id", "email"] }),
     db.Service.findByPk(serviceId, {
       include: [{ model: db.ServiceProvider }],
     }),
   ]);
+
   if (!user || !service) {
     throw new AppError(
       `User or Service not found: userId=${userId}, serviceId=${serviceId}`,
     );
   }
+
   const relatedHashId = hashIdUtil.hashIdEncode(relatedId);
-  //TODO add url based on the frontend
-  const message = `Successful payment from user ${user.email} for ${relatedType} ${hashIdUtil.hashIdEncode(relatedId)} of service ${service.title}`;
 
-  const notificationData = [
-    {
-      message,
-      url: "",
-      type: "info",
-      userId: userId,
-      metadata: {
-        serviceProviderId: serviceProviderId,
-        serviceId: service.id,
+  const providerMessage = `Successful payment from user ${user.email} for ${relatedType} ${relatedHashId} of service ${service.title}`;
+
+  const userMessage = `Your payment was successful for ${relatedType} ${relatedHashId} of service ${service.title}`;
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    await db.Notification.create(
+      {
+        message: userMessage,
+        url: "",
+        type: "info",
+        userId: userId,
+        metadata: {
+          serviceProviderId,
+          serviceId: service.id,
+          relatedId,
+        },
       },
-    },
-  ];
-  const notification = await sequelize.transaction(async (t) => {
-    return db.Notification.bulkBuild(notificationData, { transaction: t });
-  });
-  socketNotificationServices.sendSocketNotification(userId, {
-    message,
-  });
-  const html = orderActiveEmail({
-    providerName: service.ServiceProvider.name,
-    userEmail: user.email,
-    relatedType,
-    relatedHashId,
-    serviceTitle: service.title,
-    amount: amount / 100,
-  });
+      { transaction },
+    );
 
-  await Promise.all([
-    emailService.sendEmail({
-      to: service.ServiceProvider?.email,
-      subject: "Successful Purchase from Germany-Assist",
-      html,
-    }),
-    emailService.sendEmail({
-      to: user.email,
-      subject: "Successful Purchase from Germany-Assist",
-      html,
-    }),
-  ]);
+    await db.Notification.create(
+      {
+        message: providerMessage,
+        url: "",
+        type: "info",
+        userId: userId,
+        metadata: {
+          serviceProviderId,
+          serviceId: service.id,
+          relatedId,
+        },
+      },
+      { transaction },
+    );
+
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+
+  try {
+    // socket
+    socketNotificationServices.sendSocketNotification(userId, {
+      message: userMessage,
+    });
+
+    socketNotificationServices.sendSocketNotification(serviceProviderId, {
+      message: providerMessage,
+    });
+
+    // email template
+    const html = successfulPaymentEmail({
+      providerName: service.ServiceProvider.name,
+      userEmail: user.email,
+      relatedType,
+      relatedHashId,
+      serviceTitle: service.title,
+      amount: amount / 100,
+    });
+
+    // send emails in parallel
+    await Promise.all([
+      emailService.sendEmail({
+        to: service.ServiceProvider?.email,
+        subject: "Successful Purchase from Germany-Assist",
+        html,
+      }),
+      emailService.sendEmail({
+        to: user.email,
+        subject: "Successful Purchase from Germany-Assist",
+        html,
+      }),
+    ]);
+  } catch (externalError) {
+    errorLogger("Post-commit side effects failed:", externalError);
+    throw externalError;
+  }
+
+  return { success: true };
 }
 
 export default handleOrderActive;

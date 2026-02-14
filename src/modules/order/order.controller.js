@@ -2,7 +2,8 @@ import orderService, { getOrdersForSP } from "../order/order.services.js";
 import hashIdUtil from "../../utils/hashId.util.js";
 import authUtil from "../../utils/authorize.util.js";
 import { sequelize } from "../../configs/database.js";
-
+import notificationQueue from "../../jobs/queues/notification.queue.js";
+import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
 export async function payOrder(req, res, next) {
   try {
     await authUtil.checkRoleAndPermission(req.auth, ["client"], false);
@@ -58,7 +59,9 @@ export async function serviceProviderCloseOrder(req, res, next) {
       user,
       transaction,
     });
-
+    await notificationQueue.add(NOTIFICATION_EVENTS.ORDER.CLOSED, {
+      orderId: hashIdUtil.hashIdDecode(orderId),
+    });
     await transaction.commit();
     res.send({
       success: true,

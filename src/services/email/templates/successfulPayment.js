@@ -1,6 +1,6 @@
 import baseLayout from "./baseEmailLayout.js";
 
-export function orderActiveEmail({
+export function successfulPaymentEmail({
   providerName,
   userEmail,
   relatedType,
@@ -11,7 +11,7 @@ export function orderActiveEmail({
   const systemMessage = `Successful payment from user ${userEmail} for ${relatedType} ${relatedHashId} of service ${serviceTitle}`;
 
   const content = `
-    <p>${providerName},</p>
+    <p>${providerName}</p>
 
     <p>Great news! 🎉</p>
 
