@@ -7,8 +7,7 @@ export const loginValidators = [
     .notEmpty()
     .withMessage("Email is required")
     .isEmail()
-    .withMessage("Invalid email format")
-    .normalizeEmail(),
+    .withMessage("Invalid email format"),
 
   // Password validation
   body("password")
