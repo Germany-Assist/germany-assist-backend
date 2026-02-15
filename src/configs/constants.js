@@ -18,6 +18,7 @@ export const NOTIFICATION_EVENTS = {
     COMPLETED: "order.completed",
     REJECTED: "order.rejected",
     CANCELED: "order.canceled",
+    ACCEPTED: "order.accepted",
   },
   DISPUTE: {
     RAISED: "dispute.raised",

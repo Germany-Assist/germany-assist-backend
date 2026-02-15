@@ -7,12 +7,13 @@ import { NOTIFICATION_EVENTS } from "../../../configs/constants.js";
 // import handleServicePublished from "./service/service.published.js";
 
 // Order
-// import handleOrderRefunded from "./order/order.refunded.js";
+import handleOrderRefunded from "./order/order.refunded.js";
 import handleOrderActive from "./order/order.active.js";
 import handleOrderClosed from "./order/order.closed.js";
-// import handleOrderCompleted from "./order/order.completed.js";
-// import handleOrderRejected from "./order/order.rejected.js";
-// import handleOrderCanceled from "./order/order.canceled.js";
+import handleOrderCompleted from "./order/order.completed.js";
+import handleOrderRejected from "./order/order.rejected.js";
+import handleOrderCanceled from "./order/order.canceled.js";
+import handleOrderAccepted from "./order/order.accepted.js";
 
 // Dispute
 // import handleDisputeRaised from "./dispute/dispute.raised.js";
@@ -27,12 +28,13 @@ export const handlers = {
   // [NOTIFICATION_EVENTS.SERVICE.PUBLISHED]: handleServicePublished,
 
   // Order
-  // [NOTIFICATION_EVENTS.ORDER.REFUNDED]: handleOrderRefunded,
+  [NOTIFICATION_EVENTS.ORDER.REFUNDED]: handleOrderRefunded,
   [NOTIFICATION_EVENTS.ORDER.ACTIVE]: handleOrderActive,
   [NOTIFICATION_EVENTS.ORDER.CLOSED]: handleOrderClosed,
-  // [NOTIFICATION_EVENTS.ORDER.COMPLETED]: handleOrderCompleted,
-  // [NOTIFICATION_EVENTS.ORDER.REJECTED]: handleOrderRejected,
-  // [NOTIFICATION_EVENTS.ORDER.CANCELED]: handleOrderCanceled,
+  [NOTIFICATION_EVENTS.ORDER.COMPLETED]: handleOrderCompleted,
+  [NOTIFICATION_EVENTS.ORDER.REJECTED]: handleOrderRejected,
+  [NOTIFICATION_EVENTS.ORDER.CANCELED]: handleOrderCanceled,
+  [NOTIFICATION_EVENTS.ORDER.ACCEPTED]: handleOrderAccepted,
 
   // Dispute
   // [NOTIFICATION_EVENTS.DISPUTE.RAISED]: handleDisputeRaised,

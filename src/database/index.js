@@ -53,8 +53,6 @@ export const defineConstrains = () => {
 
   //token
   Token.belongsTo(User, { foreignKey: "userId" });
-  //notification
-  Notification.belongsTo(User, { foreignKey: "userId" });
 
   //comment
   Comment.belongsTo(Post, {

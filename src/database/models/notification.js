@@ -11,8 +11,8 @@ Notification.init(
       primaryKey: true,
       autoIncrement: true,
     },
-    userId: {
-      type: DataTypes.INTEGER,
+    recipientId: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
     message: {

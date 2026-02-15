@@ -3,8 +3,11 @@ import socketNotificationServices from "../../../../sockets/services/notificatio
 import { sequelize } from "../../../../configs/database.js";
 import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
-import { closedOrderEmail } from "../../../../services/email/templates/closedOrderEmail.js";
 import { errorLogger } from "../../../../utils/loggers.js";
+import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
+
+// triggered when the provider closes onetime order
+// triggered when the job closes the timeline order
 
 async function handleOrderClosed({ orderId }) {
   if (!orderId) {
@@ -37,7 +40,7 @@ async function handleOrderClosed({ orderId }) {
         message: userMessage,
         url: "",
         type: "info",
-        userId: order.User.id,
+        recipientId: order.User.id,
         metadata: {
           serviceProviderId: order.ServiceProvider.id,
           serviceId: order.Service.id,
@@ -52,7 +55,7 @@ async function handleOrderClosed({ orderId }) {
         message: providerMessage,
         url: "",
         type: "info",
-        userId: order.User.id,
+        recipientId: order.ServiceProvider.id,
         metadata: {
           serviceProviderId: order.ServiceProvider.id,
           serviceId: order.Service.id,
@@ -68,6 +71,23 @@ async function handleOrderClosed({ orderId }) {
     throw error;
   }
 
+  const providerEmailHtml = orderStatusEmail({
+    title: "Order Successfully completed",
+    recipientName: order.ServiceProvider.name,
+    mainMessage: providerMessage,
+    orderId: hashedOrderId,
+    serviceTitle: order.Service.title,
+    paidBy: order.User.email,
+  });
+
+  const userEmailHtml = orderStatusEmail({
+    title: "Your Order Has Been Closed",
+    recipientName: order.User.email,
+    mainMessage: userMessage,
+    orderId: hashedOrderId,
+    serviceTitle: order.Service.title,
+  });
+
   try {
     // Socket Notifications
     socketNotificationServices.sendSocketNotification(order.User.id, {
@@ -81,24 +101,16 @@ async function handleOrderClosed({ orderId }) {
       },
     );
 
-    // Email Template
-    const html = closedOrderEmail({
-      orderId: hashedOrderId,
-      providerName: order.ServiceProvider.name,
-      userEmail: order.User.email,
-      serviceTitle: order.Service.title,
-    });
-
     await Promise.all([
       emailService.sendEmail({
         to: order.ServiceProvider.email,
         subject: "Order Successfully Closed - Germany Assist",
-        html,
+        html: providerEmailHtml,
       }),
       emailService.sendEmail({
         to: order.User.email,
         subject: "Your Order Has Been Closed - Germany Assist",
-        html,
+        html: userEmailHtml,
       }),
     ]);
   } catch (externalError) {

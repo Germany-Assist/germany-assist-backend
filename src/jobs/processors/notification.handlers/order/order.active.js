@@ -5,7 +5,7 @@ import emailService from "../../../../services/email/email.service.js";
 import { AppError } from "../../../../utils/error.class.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { successfulPaymentEmail } from "../../../../services/email/templates/successfulPayment.js";
-
+// triggered on successful payment
 async function handleOrderActive(data) {
   const {
     serviceId,
@@ -16,7 +16,7 @@ async function handleOrderActive(data) {
     amount,
   } = data;
 
-  // 1️⃣ Fetch data outside transaction
+  // 1 Fetch data outside transaction
   const [user, service] = await Promise.all([
     db.User.findByPk(userId, { attributes: ["id", "email"] }),
     db.Service.findByPk(serviceId, {

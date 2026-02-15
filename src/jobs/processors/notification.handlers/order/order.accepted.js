@@ -5,8 +5,8 @@ import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
-// called only when admin triggers refund
-async function handleOrderRefunded({ orderId }) {
+// called only after the provider accepted the order
+async function handleOrderAccepted({ orderId }) {
   if (!orderId) {
     throw new Error("orderId is required");
   }
@@ -25,9 +25,9 @@ async function handleOrderRefunded({ orderId }) {
 
   const hashedOrderId = hashIdUtil.hashIdEncode(orderId);
 
-  const providerMessage = `Order ${hashedOrderId} of service "${order.Service.title}" Was refunded.`;
+  const providerMessage = `Successfully Accepted ${hashedOrderId} of service "${order.Service.title}". Your money will be released shortly after the holding duration passes with no dispute.`;
 
-  const userMessage = `Order ${hashedOrderId} of service "${order.Service.title}" Was refunded.`;
+  const userMessage = `The service provider ${order.ServiceProvider.name} has accepted your order ${hashedOrderId} for service "${order.Service.title}". Please open a dispute if needed within the allowed dispute window.`;
 
   const transaction = await sequelize.transaction();
 
@@ -69,7 +69,7 @@ async function handleOrderRefunded({ orderId }) {
   }
 
   const providerEmailHtml = orderStatusEmail({
-    title: "Order Refunded",
+    title: "Order Successfully Accepted",
     recipientName: order.ServiceProvider.name,
     mainMessage: providerMessage,
     orderId: hashedOrderId,
@@ -78,7 +78,7 @@ async function handleOrderRefunded({ orderId }) {
   });
 
   const userEmailHtml = orderStatusEmail({
-    title: "Your Order Has Been Refunded",
+    title: "Your Order Has Been Successfully Accepted",
     recipientName: order.User.email,
     mainMessage: userMessage,
     orderId: hashedOrderId,
@@ -100,12 +100,12 @@ async function handleOrderRefunded({ orderId }) {
     await Promise.all([
       emailService.sendEmail({
         to: order.ServiceProvider.email,
-        subject: "Order Refunded - Germany Assist",
+        subject: "Order Accepted - Germany Assist",
         html: providerEmailHtml,
       }),
       emailService.sendEmail({
         to: order.User.email,
-        subject: "Your Order Has Been Refunded - Germany Assist",
+        subject: "Your Accepted - Germany Assist",
         html: userEmailHtml,
       }),
     ]);
@@ -117,4 +117,4 @@ async function handleOrderRefunded({ orderId }) {
   return { success: true };
 }
 
-export default handleOrderRefunded;
+export default handleOrderAccepted;
