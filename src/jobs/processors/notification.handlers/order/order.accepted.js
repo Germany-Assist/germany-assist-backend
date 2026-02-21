@@ -1,3 +1,5 @@
+//this not used for now its just for legacy
+
 import db from "../../../../database/index.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import { sequelize } from "../../../../configs/database.js";

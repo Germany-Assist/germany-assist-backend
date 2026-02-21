@@ -5,6 +5,7 @@ import { sequelize } from "../configs/database.js";
 import { errorLogger, infoLogger } from "../utils/loggers.js";
 import { AUDIT_LOGS_CONSTANTS } from "../configs/constants.js";
 import auditLogsRepository from "../modules/auditLogs/auditLogs.repository.js";
+import notificationQueue from "../jobs/queues/notification.queue.js";
 const testDuration = "0 * * * * *";
 const actualDuration = "0 0 0 * * *";
 
@@ -60,7 +61,9 @@ const payoutCron = cron.schedule("0 * * * * *", async () => {
       newValue: { ...order.toJSON(), status: "completed" },
       actorType: AUDIT_LOGS_CONSTANTS.ACTOR_SYSTEM,
     }));
-
+    for (let i = 0; i < orders.length; i++) {
+      await notificationQueue.add({ orderId: orders[i].id });
+    }
     await db.Payout.bulkCreate(payouts, { transaction });
     await auditLogsRepository.createBulkNewLogRecords(logsData, transaction);
     await transaction.commit();

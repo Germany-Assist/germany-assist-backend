@@ -44,7 +44,7 @@ async function handleOrderActive(data) {
         message: userMessage,
         url: "",
         type: "info",
-        userId: userId,
+        recipientId: userId,
         metadata: {
           serviceProviderId,
           serviceId: service.id,
@@ -59,7 +59,7 @@ async function handleOrderActive(data) {
         message: providerMessage,
         url: "",
         type: "info",
-        userId: userId,
+        recipientId: serviceProviderId,
         metadata: {
           serviceProviderId,
           serviceId: service.id,

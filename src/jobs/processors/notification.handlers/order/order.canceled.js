@@ -5,8 +5,8 @@ import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
-// trigger by user cancel
-// trigger by provider cancel
+// trigger by user successful cancel
+// trigger by provider successful cancel
 async function handleOrderCanceled({ orderId }) {
   if (!orderId) {
     throw new Error("orderId is required");

@@ -1,0 +1,11 @@
+/meta:
+  get:
+    tags: [Meta]
+    summary: Initial call to wake up the server
+    responses:
+      '200':
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi/components/schemas.yaml#/MetaResponse'
