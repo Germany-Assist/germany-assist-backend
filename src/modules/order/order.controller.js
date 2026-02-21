@@ -65,7 +65,8 @@ export async function serviceProviderCloseOrder(req, res, next) {
     await transaction.commit();
     res.send({
       success: true,
-      message: "The Order was closed successfully 7 days for the escrow window",
+      message:
+        "The Order was closed successfully 14 days for the escrow window",
     });
   } catch (err) {
     await transaction.rollback();

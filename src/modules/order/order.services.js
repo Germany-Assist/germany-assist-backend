@@ -99,7 +99,6 @@ export async function serviceProviderCloseOrder({
     newValue: { ...order.toJSON(), status: "completed" },
     actorType: AUDIT_LOGS_CONSTANTS.ACTOR_PROVIDER,
   };
-
   await order.update({ status: "pending_completion" }, { transaction });
   await auditLogsRepository.createNewLogRecord(logData, transaction);
   return;
