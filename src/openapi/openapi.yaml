@@ -17,6 +17,10 @@ components:
       bearerFormat: JWT
 
 paths:
+  /notification:
+    $ref: "../modules/notification/notification.swagger.yaml#/~1notification"
+  /notification/{id}:
+    $ref: "../modules/notification/notification.swagger.yaml#/~1notification~1{id}"
   /user:
     $ref: "../modules/user/user.swagger.yaml#/~1user"
   /user/admin:

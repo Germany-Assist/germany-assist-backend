@@ -1,0 +1,45 @@
+/notification:
+  get:
+    tags: [Notification]
+    summary: Fetching all notifications with pagination
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          example: 1
+        required: false
+        description: Page number
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          example: 10
+        required: false
+        description: Number of items per page
+    responses:
+      "200":
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              $ref: "../../openapi/components/schemas.yaml#/NotificationAllResponse"
+
+/notification/{id}:
+  put:
+    tags: [Notification]
+    summary: Mark nonfiction as read
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The hashed notification ID
+        schema:
+          type: string
+    responses:
+      "200":
+        description: Successful response
