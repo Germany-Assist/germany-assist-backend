@@ -70,13 +70,13 @@ async function handleServiceApproved({ serviceId }) {
     socketNotificationServices.sendSocketNotificationAdmin({
       message: providerMessage,
     });
-    // await Promise.all([
-    //   emailService.sendEmail({
-    //     to: service.ServiceProvider.email,
-    //     subject: "Service Approved - Germany Assist",
-    //     html: providerEmailHtml,
-    //   }),
-    // ]);
+    await Promise.all([
+      emailService.sendEmail({
+        to: service.ServiceProvider.email,
+        subject: "Service Approved - Germany Assist",
+        html: providerEmailHtml,
+      }),
+    ]);
   } catch (externalError) {
     errorLogger("Post-commit side effects failed:", externalError);
     throw externalError;

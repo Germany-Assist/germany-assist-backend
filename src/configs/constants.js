@@ -10,6 +10,7 @@ export const NOTIFICATION_EVENTS = {
     APPROVED: "service.approved",
     REJECTED: "service.rejected",
     PUBLISHED: "service.published",
+    UNPUBLISHED: "service.unpublished",
   },
   ORDER: {
     REFUNDED: "order.refunded",

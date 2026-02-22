@@ -6,8 +6,8 @@ import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
 import serviceStatusEmail from "../../../../services/email/templates/serviceStatusEmail.js";
-// called only after the service is created
-async function handleServiceCreated({ serviceId }) {
+// called only after the service is unpublished
+async function handleServiceUnpublished({ serviceId }) {
   if (!serviceId) {
     throw new Error("serviceId is required");
   }
@@ -23,7 +23,7 @@ async function handleServiceCreated({ serviceId }) {
   }
 
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
-  const providerMessage = `Successfully Created new service "${service.title}" with id ${hashedServiceId} you can publish it any time please note that the service still requires admin approval to be live and visible.`;
+  const providerMessage = `Successfully Unpublished service "${service.title}" with id ${hashedServiceId} please note that the service wont be live, however you can publish it any time.`;
   const transaction = await sequelize.transaction();
   try {
     await db.Notification.create(
@@ -47,12 +47,12 @@ async function handleServiceCreated({ serviceId }) {
   }
 
   const providerEmailHtml = serviceStatusEmail({
-    title: "Service Successfully Created",
+    title: "Service Successfully Unpublished",
     recipientName: service.ServiceProvider.name,
     mainMessage: providerMessage,
     serviceId: hashedServiceId,
     serviceTitle: service.title,
-    status: "Created",
+    status: "Unpublished",
   });
 
   try {
@@ -68,7 +68,7 @@ async function handleServiceCreated({ serviceId }) {
     await Promise.all([
       emailService.sendEmail({
         to: service.ServiceProvider.email,
-        subject: "Service Created - Germany Assist",
+        subject: "Service Unpublished - Germany Assist",
         html: providerEmailHtml,
       }),
     ]);
@@ -80,4 +80,4 @@ async function handleServiceCreated({ serviceId }) {
   return { success: true };
 }
 
-export default handleServiceCreated;
+export default handleServiceUnpublished;

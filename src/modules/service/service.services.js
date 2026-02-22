@@ -354,6 +354,7 @@ async function alterServiceStatus(id, status) {
 }
 async function alterServiceStatusSP(id, status) {
   const service = await db.Service.findByPk(id);
+  const notificationStatus = status === "publish" ? "PUBLISHED" : "UNPUBLISHED";
   if (!service) throw new AppError(400, "failed to find service", false);
   if (status === "publish") {
     service.published = true;
@@ -362,6 +363,9 @@ async function alterServiceStatusSP(id, status) {
   } else {
     throw new AppError(400, "failed to process request", false);
   }
+  notificationQueue.add(NOTIFICATION_EVENTS.SERVICE[notificationStatus], {
+    serviceId: service.id,
+  });
   return await service.save();
 }
 export const updateServiceRating = async (

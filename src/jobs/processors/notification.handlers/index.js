@@ -1,11 +1,11 @@
 import { NOTIFICATION_EVENTS } from "../../../configs/constants.js";
 
 // Service
-// import handleServiceCreated from "./service/service.created.js";
+import handleServiceCreated from "./service/service.created.js";
 import handleServiceApproved from "./service/service.approved.js";
-// import handleServiceRejected from "./service/service.rejected.js";
-// import handleServicePublished from "./service/service.published.js";
-
+import handleServiceRejected from "./service/service.rejected.js";
+import handleServicePublished from "./service/service.published.js";
+import handleServiceUnpublished from "./service/service.unpublished.js";
 // Order
 import handleOrderRefunded from "./order/order.refunded.js";
 import handleOrderActive from "./order/order.active.js";
@@ -22,10 +22,11 @@ import handleOrderCanceled from "./order/order.canceled.js";
 
 export const handlers = {
   // Service
-  // [NOTIFICATION_EVENTS.SERVICE.CREATED]: handleServiceCreated,
+  [NOTIFICATION_EVENTS.SERVICE.CREATED]: handleServiceCreated,
   [NOTIFICATION_EVENTS.SERVICE.APPROVED]: handleServiceApproved,
-  // [NOTIFICATION_EVENTS.SERVICE.REJECTED]: handleServiceRejected,
-  // [NOTIFICATION_EVENTS.SERVICE.PUBLISHED]: handleServicePublished,
+  [NOTIFICATION_EVENTS.SERVICE.REJECTED]: handleServiceRejected,
+  [NOTIFICATION_EVENTS.SERVICE.PUBLISHED]: handleServicePublished,
+  [NOTIFICATION_EVENTS.SERVICE.UNPUBLISHED]: handleServiceUnpublished,
 
   // Order
   [NOTIFICATION_EVENTS.ORDER.REFUNDED]: handleOrderRefunded,
