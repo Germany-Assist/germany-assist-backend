@@ -13,7 +13,7 @@ export async function openDispute(req, res, next) {
 
 export async function listDisputes(req, res, next) {
   try {
-    const result = await disputeService.listDisputes(req.query, req.auth);
+    const result = await disputeService.listDisputesAdmin(req.query, req.auth);
     res.json({
       meta: result.meta,
       data: result.rows.map(toResponse),
