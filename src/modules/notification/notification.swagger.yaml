@@ -19,6 +19,13 @@
           example: 10
         required: false
         description: Number of items per page
+      - in: query
+        name: isRead
+        schema:
+          type: boolean
+          example: true
+        required: false
+        description: Filter by read status
     responses:
       "200":
         description: Successful response

@@ -1,19 +1,13 @@
 import db from "../../database/index.js";
-/**
- * Retrieves all notifications for a given recipient.
- *
- * @param {string} id - the id of the recipient
- * @returns {Promise<Array<Object>>} - an array of notifications
- */
-export const getAll = async (id, limit = 10, offset = 0) => {
+
+export const getAll = async (limit = 10, offset = 0, filters) => {
   const { rows, count } = await db.Notification.findAndCountAll({
-    where: { recipientId: id, isRead: false },
+    where: { ...filters },
     attributes: ["id", "message", "isRead", "createdAt"],
     limit,
     offset,
     order: [["createdAt", "DESC"]],
   });
-
   return [rows, count];
 };
 /**

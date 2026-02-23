@@ -1,14 +1,25 @@
 import hashIdUtil from "../../utils/hashId.util.js";
 import notificationRepository from "./notification.repository.js";
 
-export const getAll = async (id, page = 0, limit = 10) => {
+export const getAll = async (id, query) => {
+  const page = Math.max(Number(query.page) || 1, 1);
+  const limit = Math.min(Number(query.limit) || 10, 100);
   const offset = (page - 1) * limit;
-  const [rows, count] = await notificationRepository.getAll(id, limit, offset);
-  const metadata = {
+  const filters = {};
+  filters.recipientId = id;
+  if (query.isRead !== undefined) {
+    filters.isRead = query.isRead === "true";
+  }
+  const [rows, count] = await notificationRepository.getAll(
+    limit,
+    offset,
+    filters,
+  );
+  const meta = {
     total: count,
     page,
     limit,
-    totalPages: Math.ceil(count / limit),
+    pages: Math.ceil(count / limit),
   };
   const sanitizedNotifications = rows.map((notification) => {
     return {
@@ -18,7 +29,7 @@ export const getAll = async (id, page = 0, limit = 10) => {
       createdAt: notification.createdAt,
     };
   });
-  return { notifications: sanitizedNotifications, metadata };
+  return { notifications: sanitizedNotifications, meta };
 };
 /**
  * Updates the read status of a notification.
