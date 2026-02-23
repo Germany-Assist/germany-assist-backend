@@ -4,6 +4,8 @@ import authUtils from "../../utils/authorize.util.js";
 import { sequelize } from "../../configs/database.js";
 import { AppError } from "../../utils/error.class.js";
 import serviceMappers from "./service.mappers.js";
+import notificationQueue from "../../jobs/queues/notification.queue.js";
+import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
 
 export async function createService(req, res, next) {
   const transaction = await sequelize.transaction();
@@ -31,7 +33,7 @@ export async function createService(req, res, next) {
       req.file.stream.resume();
     }
     await transaction.rollback();
-    return next(error);
+    next(error);
   }
 }
 
@@ -183,6 +185,7 @@ export async function alterServiceStatus(req, res, next) {
       hashIdUtil.hashIdDecode(id),
       status,
     );
+
     res.sendStatus(200);
   } catch (error) {
     next(error);

@@ -69,6 +69,9 @@ export class QueueManager {
       prefix: bullPrefix,
       concurrency: 1,
       autorun: true,
+      lockDuration: 30000,
+      stalledInterval: 30000,
+      maxStalledCount: 3,
       ...options,
     });
     worker.on("completed", (job) =>
@@ -84,17 +87,16 @@ export class QueueManager {
   }
 
   async shutdownAll() {
-    // close workers
     for (const worker of this.workers.values()) {
       infoLogger("Closing All the bullmq-workers");
-      await worker?.close();
+      await worker?.close(true);
     }
-    // close queue events
+
     for (const events of this.events.values()) {
       infoLogger("Closing All the bullmq-events");
       await events?.close();
     }
-    // optionally close queues (not mandatory)
+
     for (const queue of this.queues.values()) {
       infoLogger("Closing All the bullmq-queues");
       await queue?.close();

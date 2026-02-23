@@ -152,7 +152,42 @@ MetaResponse:
     message:
       type: string
       example: "Server is awake"
-
+NotificationAllResponse:
+  type: object
+  properties:
+    notification:
+      type: array
+      description: Array of notification objects
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            example: "X2QA"
+          type:
+            type: string
+            example: "info"
+          message:
+            type: string
+            example: "You have a new order"
+          createdAt:
+            type: string
+            format: date-time
+    metadata:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 10
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        totalPages:
+          type: integer
+          example: 1
 OrderResponse:
   oneOf:
     - $ref: "#/OrderResponsePayout"

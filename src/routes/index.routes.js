@@ -12,6 +12,7 @@ import { Router } from "express";
 import dashboardRouter from "../modules/dashboard/dashboard.routes.js";
 import disputeRouter from "../modules/disputes/dispute.routes.js";
 import verificationRequestRouter from "../modules/verificationRequests/verificationRequest.routes.js";
+import notificationRouter from "../modules/notification/notification.routes.js";
 
 const apiRouter = Router();
 apiRouter
@@ -27,6 +28,7 @@ apiRouter
   .use("/meta", metaRouter)
   .use("/dashboard", dashboardRouter)
   .use("/dispute", disputeRouter)
-  .use("/requests", verificationRequestRouter);
+  .use("/requests", verificationRequestRouter)
+  .use("/notification", notificationRouter);
 
 export default apiRouter;

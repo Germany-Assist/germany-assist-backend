@@ -64,8 +64,9 @@ export default function createSocketServer(server) {
   if (NODE_ENV == "test") return;
   io = new Server(server, {
     cors: {
-      origin: [FRONTEND_URL],
+      origin: FRONTEND_URL,
       methods: ["GET", "POST"],
+      credentials: true,
     },
     reconnection: true,
     connectionStateRecovery: {

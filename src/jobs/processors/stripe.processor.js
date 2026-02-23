@@ -30,7 +30,6 @@ export async function stripeProcessor(job) {
         }
         case STRIPE_EVENTS.PAYMENT_SUCCESS: {
           const pi = event.data.object;
-
           const orderData = {
             amount: pi.amount,
             status: "active",
@@ -51,12 +50,10 @@ export async function stripeProcessor(job) {
             actorType: "system",
           };
           await auditLogsRepository.createNewLogRecord(logData, t);
-          debugLogger(`Created order for payment ${pi.id}`);
           await notificationQueue.add(
-            NOTIFICATION_EVENTS.PAYMENT_SUCCESS,
+            NOTIFICATION_EVENTS.ORDER.ACTIVE,
             orderData,
           );
-          debugLogger(`adding to notification queue payment ${pi.id}`);
           break;
         }
         case STRIPE_EVENTS.PAYMENT_FAILED: {

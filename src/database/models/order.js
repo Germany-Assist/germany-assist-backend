@@ -13,7 +13,7 @@ Order.init(
     status: {
       type: DataTypes.ENUM(
         "refunded",
-        "active",
+        "paid",
         "pending_completion",
         "completed",
         "cancelled",
@@ -28,11 +28,6 @@ Order.init(
     },
     serviceId: { type: DataTypes.INTEGER, allowNull: false },
     serviceProviderId: { type: DataTypes.UUID, allowNull: false },
-    serviceProviderResponse: {
-      type: DataTypes.ENUM("accepted", "rejected", "pending"),
-      allowNull: false,
-      defaultValue: "pending",
-    },
     stripePaymentIntentId: { type: DataTypes.STRING, unique: true },
     currency: { type: DataTypes.STRING, defaultValue: "usd" },
     amount: { type: DataTypes.FLOAT, allowNull: false },

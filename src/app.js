@@ -24,7 +24,7 @@ app.use((req, res, next) => {
 app.use("/payments", paymentsRouter);
 app.use(cookieParser());
 app.use(express.json());
-/// important to update upon production
+/// TODO important to update upon production
 app.use(
   helmet({
     crossOriginOpenerPolicy: false,
@@ -39,6 +39,7 @@ app.use(
 );
 app.set("trust proxy", 1);
 app.use(morganMiddleware);
+
 if (NODE_ENV !== "production") {
   app.use(
     "/__swagger-dev",
@@ -46,6 +47,7 @@ if (NODE_ENV !== "production") {
   );
   await setupSwagger(app);
 }
+
 app.use("/api", apiRouter);
 app.get("/health", (_, res) => res.sendStatus(200));
 

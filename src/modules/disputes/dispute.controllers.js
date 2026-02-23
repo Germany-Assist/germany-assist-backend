@@ -3,8 +3,8 @@ import { toResponse } from "./dispute.mappers.js";
 import authUtil from "../../utils/authorize.util.js";
 export async function openDispute(req, res, next) {
   try {
-    const dispute = await disputeService.openDispute(req.body, req.auth);
-    res.status(201).json(toResponse(dispute));
+    await disputeService.openDispute(req.body, req.auth);
+    res.status(201);
   } catch (err) {
     next(err);
   }
@@ -12,7 +12,7 @@ export async function openDispute(req, res, next) {
 
 export async function listDisputesClient(req, res, next) {
   try {
-    const result = await disputeService.listDisputes(req.query, req.auth);
+    const result = await disputeService.listDisputesClient(req.query, req.auth);
     res.json({
       meta: result.meta,
       data: result.rows.map(toResponse),
@@ -27,7 +27,10 @@ export async function listDisputesProvider(req, res, next) {
       "service_provider_root",
       "service_provider_rep",
     ]);
-    const result = await disputeService.listDisputes(req.query, req.auth);
+    const result = await disputeService.listDisputesProvider(
+      req.query,
+      req.auth,
+    );
     res.json({
       meta: result.meta,
       data: result.rows.map(toResponse),
@@ -38,7 +41,7 @@ export async function listDisputesProvider(req, res, next) {
 }
 export async function listDisputesAdmin(req, res, next) {
   try {
-    const result = await disputeService.listDisputes(req.query, req.auth);
+    const result = await disputeService.listDisputesAdmin(req.query, req.auth);
     res.json({
       meta: result.meta,
       data: result.rows.map(toResponse),
@@ -84,6 +87,8 @@ export async function resolveDispute(req, res, next) {
 const disputeController = {
   openDispute,
   listDisputesProvider,
+  listDisputesClient,
+  listDisputesAdmin,
   getDispute,
   markInReview,
   resolveDispute,

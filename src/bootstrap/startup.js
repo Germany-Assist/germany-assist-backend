@@ -16,8 +16,4 @@ export async function startup() {
   // Redis
   await connectRedis();
   infoLogger("✅ Redis connected");
-
-  // BullMQ
-  //   await QueueManager.startAll();
-  //   infoLogger("✅ BullMQ workers started");
 }
