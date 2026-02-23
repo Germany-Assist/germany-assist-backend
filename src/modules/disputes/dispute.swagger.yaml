@@ -1,0 +1,69 @@
+/dispute/provider:
+  get:
+    tags: [Disputes]
+    summary: Get all disputes for provider
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: Disputes list
+        content:
+          application/json:
+            schema:
+              type: array
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+/dispute/client:
+  get:
+    summary: Get all disputes for client
+    tags: [Disputes]
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: Disputes list
+        content:
+          application/json:
+            schema:
+              type: array
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+/dispute/admin:
+  get:
+    summary: Get all disputes for admin
+    security:
+      - bearerAuth: []
+    tags: [Disputes]
+    responses:
+      200:
+        description: Disputes list
+        content:
+          application/json:
+            schema:
+              type: array
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized

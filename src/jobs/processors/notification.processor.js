@@ -14,7 +14,6 @@ async function notificationProcessor(job) {
   try {
     await handler(data);
   } catch (error) {
-    console.log(error);
     errorLogger({
       jobId: id,
       eventName: name,

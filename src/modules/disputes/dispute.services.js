@@ -2,7 +2,8 @@ import { AppError } from "../../utils/error.class.js";
 import hashIdUtil from "../../utils/hashId.util.js";
 import orderRepository from "../order/order.repository.js";
 import disputeRepository from "./dispute.repository.js";
-
+import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
+import notificationQueue from "../../jobs/queues/notification.queue.js";
 export async function openDispute(data, auth) {
   const { description, reason } = data;
   const orderId = hashIdUtil.hashIdDecode(data.orderId);
@@ -13,13 +14,17 @@ export async function openDispute(data, auth) {
     throw new AppError(403, "invalid buyer", false, "invalid buyer");
   if (order.status !== "active" && order.status !== "pending_completion")
     throw new AppError(404, "invalid action", true, "invalid action");
-  return disputeRepository.create({
+  await disputeRepository.create({
     userId: auth.id,
     serviceProviderId: order.serviceProviderId,
     orderId,
     reason: reason,
     description: description,
   });
+  notificationQueue.add(NOTIFICATION_EVENTS.DISPUTE.RAISED, {
+    orderId,
+  });
+  return;
 }
 
 export async function listDisputesProvider(query, auth) {
@@ -117,6 +122,8 @@ const disputeService = {
   resolveDispute,
   markInReview,
   getDisputeById,
+  listDisputesClient,
+  listDisputesAdmin,
   listDisputesProvider,
   openDispute,
 };
