@@ -37,6 +37,7 @@ async function handleServiceApproved({ serviceId }) {
         url: "",
         type: "info",
         recipientId: service.ServiceProvider.id,
+        recipientType: "service_provider",
         metadata: {
           serviceProviderId: service.ServiceProvider.id,
           serviceId: service.id,

@@ -157,9 +157,9 @@ export async function verifyUserManual(hashedId) {
   await userRepository.alterUserVerification(userId, true);
 }
 export async function getUserProfile(id) {
-  const user = await userRepository.getUserProfile(id);
+  const { user, notifications } = await userRepository.getUserProfile(id);
   const sanitizedUser = await userMapper.sanitizeUser(user.toJSON());
-  return sanitizedUser;
+  return { ...sanitizedUser, unReadNotifications: notifications };
 }
 const authServices = {
   sendVerificationEmail,

@@ -15,6 +15,10 @@ Notification.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    recipientType: {
+      type: DataTypes.ENUM("user", "service_provider", "admin"),
+      allowNull: false,
+    },
     message: {
       type: DataTypes.TEXT,
       allowNull: true,

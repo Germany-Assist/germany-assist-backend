@@ -132,6 +132,11 @@ export const defineConstrains = () => {
   User.hasMany(Review, { foreignKey: "userId" });
   User.hasOne(UserRole, { foreignKey: "userId" });
   User.hasMany(Favorite, { foreignKey: "userId" });
+  User.hasMany(Notification, {
+    foreignKey: "recipientId",
+    constraints: false,
+  });
+
   User.belongsToMany(Permission, {
     through: UserPermission,
     as: "userToPermission",
@@ -140,7 +145,6 @@ export const defineConstrains = () => {
     onDelete: "cascade",
     unique: true,
   });
-  User.hasMany(Notification, { foreignKey: "userId" });
   User.hasMany(Token, { foreignKey: "userId" });
   //user Role
   UserRole.belongsTo(User, { foreignKey: "userId" });
@@ -165,7 +169,6 @@ export const defineConstrains = () => {
   });
   Service.hasMany(Review, { foreignKey: "serviceId" });
   Service.hasMany(Favorite, { foreignKey: "serviceId" });
-
   // Service.hasMany Timeline
   Service.hasMany(Timeline, {
     foreignKey: "serviceId",
@@ -233,6 +236,10 @@ export const defineConstrains = () => {
     through: ServiceProviderCategory,
     foreignKey: "serviceProviderId",
     otherKey: "categoryId",
+  });
+  ServiceProvider.hasMany(Notification, {
+    foreignKey: "recipientId",
+    constraints: false,
   });
 
   //category

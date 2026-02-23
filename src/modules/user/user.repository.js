@@ -105,7 +105,27 @@ export const getUserProfile = async (id) => {
       },
     ],
   });
-  return user;
+
+  const recipientId =
+    user.UserRole.relatedType === "ServiceProvider"
+      ? user.UserRole.relatedId
+      : user.id;
+
+  const idType = Number.isInteger(recipientId) ? "integer" : "varchar";
+
+  // Query notifications with dynamic cast
+  const notifications = await db.Notification.count({
+    where: {
+      [Op.and]: [
+        Sequelize.where(
+          Sequelize.cast(Sequelize.col("recipient_id"), idType),
+          recipientId,
+        ),
+        { isRead: false },
+      ],
+    },
+  });
+  return { user, notifications };
 };
 
 //

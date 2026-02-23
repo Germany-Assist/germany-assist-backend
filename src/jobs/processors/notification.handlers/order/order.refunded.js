@@ -38,6 +38,7 @@ async function handleOrderRefunded({ orderId }) {
         url: "",
         type: "info",
         recipientId: order.User.id,
+        recipientType: "user",
         metadata: {
           serviceProviderId: order.ServiceProvider.id,
           serviceId: order.Service.id,
@@ -53,6 +54,7 @@ async function handleOrderRefunded({ orderId }) {
         url: "",
         type: "info",
         recipientId: order.ServiceProvider.id,
+        recipientType: "service_provider",
         metadata: {
           serviceProviderId: order.ServiceProvider.id,
           serviceId: order.Service.id,
