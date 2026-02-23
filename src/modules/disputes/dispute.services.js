@@ -4,6 +4,7 @@ import orderRepository from "../order/order.repository.js";
 import disputeRepository from "./dispute.repository.js";
 import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
 import notificationQueue from "../../jobs/queues/notification.queue.js";
+import orderService from "../order/order.services.js";
 export async function openDispute(data, auth) {
   const { description, reason } = data;
   const orderId = hashIdUtil.hashIdDecode(data.orderId);
@@ -27,104 +28,83 @@ export async function openDispute(data, auth) {
   return;
 }
 
-export async function listDisputesProvider(query, auth) {
+export async function listDisputes(query, auth) {
+  const role = auth.role;
   const filters = {
     status: query.status,
-    orderId: hashIdUtil.hashIdDecode(query.orderId),
-    userId: hashIdUtil.hashIdDecode(query.userId),
-    status: query.status,
+    orderId: query.orderId ? hashIdUtil.hashIdDecode(query.orderId) : undefined,
     resolution: query.resolution,
-    serviceProviderId: auth.relatedId,
-  };
-  return disputeRepository.findAllPaginated({
-    page: query.page,
-    limit: query.limit,
-    filters,
-  });
-}
-export async function listDisputesClient(query, auth) {
-  const filters = {
-    status: query.status,
-    orderId: hashIdUtil.hashIdDecode(query.orderId),
-    status: query.status,
-    resolution: query.resolution,
-    serviceProviderId: query.serviceProviderId,
-    userId: auth.id,
-  };
-  return disputeRepository.findAllPaginated({
-    page: query.page,
-    limit: query.limit,
-    filters,
-  });
-}
-export async function listDisputesAdmin(query) {
-  const filters = {
-    status: query.status,
-    orderId: hashIdUtil.hashIdDecode(query.orderId),
-    status: query.status,
-    resolution: query.resolution,
-    serviceProviderId: query.serviceProviderId,
-    userId: hashIdUtil.hashIdDecode(query.userId),
   };
 
-  return disputeRepository.findAllPaginated({
-    page: query.page,
-    limit: query.limit,
-    filters,
-  });
-}
-export async function getDisputeById(id, user) {
-  const dispute = await disputeRepository.findById(id);
-  if (!dispute) throw new Error("Dispute not found");
-
-  if (user.role !== "admin" && dispute.openedBy !== "buyer") {
-    throw new Error("Forbidden");
+  if (role === "client") {
+    filters.userId = auth.id;
+    if (query.serviceProviderId)
+      filters.serviceProviderId = query.serviceProviderId;
+  } else if (
+    role === "service_provider_root" ||
+    role === "service_provider_rep"
+  ) {
+    filters.serviceProviderId = auth.relatedId;
+    if (query.userId)
+      filters.userId = query.userId
+        ? hashIdUtil.hashIdDecode(query.userId)
+        : undefined;
+  } else if (role === "admin" || role === "super_admin") {
+    if (query.userId) filters.userId = hashIdUtil.hashIdDecode(query.userId);
+    if (query.serviceProviderId)
+      filters.serviceProviderId = query.serviceProviderId;
+  } else {
+    throw new AppError(403, "Unauthorized", false, "Unauthorized");
   }
+  const result = await disputeRepository.findAll({
+    page: query.page,
+    limit: query.limit,
+    filters,
+  });
 
-  return dispute;
+  return result;
 }
 
 export async function markInReview(id, user) {
-  if (user.role !== "admin") throw new Error("Forbidden");
-
   const dispute = await disputeRepository.findById(id);
-  if (!dispute) throw new Error("Dispute not found");
-
+  if (!dispute)
+    throw new AppError(404, "Dispute not found", true, "Dispute not found");
   if (dispute.status !== "open") {
-    throw new Error("Only open disputes can be reviewed");
+    throw new AppError(
+      403,
+      "Only open disputes can be reviewed",
+      false,
+      "Only open disputes can be reviewed",
+    );
   }
-
   dispute.status = "in_review";
   await dispute.save();
-
   return dispute;
 }
 
-export async function resolveDispute(id, data, user) {
-  if (user.role !== "admin") throw new Error("Forbidden");
-
-  const dispute = await disputeRepository.findById(id);
-  if (!dispute) throw new Error("Dispute not found");
-
-  if (dispute.status === "resolved") {
-    throw new Error("Dispute already resolved");
+export async function resolveDispute(disputeId, resolution) {
+  const validResolutions = [
+    "buyer_won",
+    "provider_won",
+    "partial",
+    "cancelled",
+  ];
+  if (!validResolutions.includes(resolution)) {
+    throw new Error("Invalid resolution");
   }
-
-  dispute.status = "resolved";
-  dispute.resolution = data.resolution;
-  dispute.resolvedAt = new Date();
-
-  await dispute.save();
+  const status = resolution === "cancelled" ? "cancelled" : "resolved";
+  const dispute = await disputeRepository.updateDispute(disputeId, {
+    status,
+    resolution,
+  });
+  // i should update the order status and flow
   return dispute;
 }
 
 const disputeService = {
   resolveDispute,
   markInReview,
-  getDisputeById,
-  listDisputesClient,
-  listDisputesAdmin,
-  listDisputesProvider,
+  listDisputes,
   openDispute,
 };
 export default disputeService;

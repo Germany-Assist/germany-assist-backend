@@ -31,18 +31,15 @@ Dispute.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-
     status: {
       type: DataTypes.ENUM("open", "in_review", "resolved"),
       allowNull: false,
       defaultValue: "open",
     },
-
     resolution: {
       type: DataTypes.ENUM("buyer_won", "provider_won", "partial", "cancelled"),
       allowNull: true,
     },
-
     resolvedAt: {
       type: DataTypes.DATE,
       allowNull: true,
