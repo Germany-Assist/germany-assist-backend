@@ -69,7 +69,7 @@ export async function stripeProcessor(job) {
       infoLogger(`Job ${job.id} completed in ${processingTime}ms`);
     } catch (err) {
       await t.rollback();
-      errorLogger(`Transaction failed for job ${job.id}:`, err);
+      errorLogger(err);
       throw err;
     }
   } catch (err) {

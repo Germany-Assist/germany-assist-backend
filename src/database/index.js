@@ -132,11 +132,7 @@ export const defineConstrains = () => {
   User.hasMany(Review, { foreignKey: "userId" });
   User.hasOne(UserRole, { foreignKey: "userId" });
   User.hasMany(Favorite, { foreignKey: "userId" });
-  User.hasMany(Notification, {
-    foreignKey: "recipientId",
-    constraints: false,
-  });
-
+  User.hasMany(Notification, { foreignKey: "userId" });
   User.belongsToMany(Permission, {
     through: UserPermission,
     as: "userToPermission",
@@ -237,13 +233,9 @@ export const defineConstrains = () => {
     foreignKey: "serviceProviderId",
     otherKey: "categoryId",
   });
-  ServiceProvider.hasMany(Notification, {
-    foreignKey: "recipientId",
-    constraints: false,
-  });
+  ServiceProvider.hasMany(Notification, { foreignKey: "serviceProviderId" });
 
   //category
-
   Category.hasMany(Subcategory, {
     foreignKey: "categoryId",
   });

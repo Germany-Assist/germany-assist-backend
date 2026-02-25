@@ -11,13 +11,18 @@ Notification.init(
       primaryKey: true,
       autoIncrement: true,
     },
-    recipientId: {
-      type: DataTypes.STRING,
-      allowNull: false,
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
-    recipientType: {
-      type: DataTypes.ENUM("user", "service_provider", "admin"),
+    serviceProviderId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    isAdmin: {
+      type: DataTypes.BOOLEAN,
       allowNull: false,
+      defaultValue: false,
     },
     message: {
       type: DataTypes.TEXT,

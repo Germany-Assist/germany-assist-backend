@@ -17,11 +17,11 @@ export const getAll = async (limit = 10, offset = 0, filters) => {
  * @param {string} recipientId - the id of the recipient
  * @returns {Promise<void>} - a promise that resolves when the operation is complete
  */
-export const updateRead = async (id, recipientId) => {
-  await db.Notification.update(
+export const updateRead = async (filters) => {
+  return await db.Notification.update(
     { isRead: true },
     {
-      where: { id, recipientId },
+      where: filters,
     },
   );
 };

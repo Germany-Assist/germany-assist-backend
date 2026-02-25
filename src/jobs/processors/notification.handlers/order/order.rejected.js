@@ -32,45 +32,6 @@ async function handleOrderRejected({ orderId }) {
 
   const transaction = await sequelize.transaction();
 
-  try {
-    await db.Notification.create(
-      {
-        message: userMessage,
-        url: "",
-        type: "info",
-        recipientId: order.User.id,
-        recipientType: "user",
-        metadata: {
-          serviceProviderId: order.ServiceProvider.id,
-          serviceId: order.Service.id,
-          orderId,
-        },
-      },
-      { transaction },
-    );
-
-    await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        recipientId: order.ServiceProvider.id,
-        recipientType: "service_provider",
-        metadata: {
-          serviceProviderId: order.ServiceProvider.id,
-          serviceId: order.Service.id,
-          orderId,
-        },
-      },
-      { transaction },
-    );
-
-    await transaction.commit();
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
-
   const providerEmailHtml = orderStatusEmail({
     title: "Order Was Rejected",
     recipientName: order.ServiceProvider.name,
@@ -89,13 +50,45 @@ async function handleOrderRejected({ orderId }) {
   });
 
   try {
+    const userNotification = await db.Notification.create(
+      {
+        message: userMessage,
+        url: "",
+        type: "info",
+        userId: order.User.id,
+        metadata: {
+          serviceProviderId: order.ServiceProvider.id,
+          serviceId: order.Service.id,
+          orderId,
+        },
+      },
+      { transaction },
+    );
+
+    const providerNotification = await db.Notification.create(
+      {
+        message: providerMessage,
+        url: "",
+        type: "info",
+        serviceProviderId: order.ServiceProvider.id,
+        metadata: {
+          serviceProviderId: order.ServiceProvider.id,
+          serviceId: order.Service.id,
+          orderId,
+        },
+      },
+      { transaction },
+    );
+
     socketNotificationServices.sendSocketNotification(order.User.id, {
+      id: hashIdUtil.hashIdEncode(userNotification.id),
       message: userMessage,
     });
 
-    socketNotificationServices.sendSocketNotification(
+    socketNotificationServices.sendSocketNotificationToProvider(
       order.ServiceProvider.id,
       {
+        id: hashIdUtil.hashIdEncode(providerNotification.id),
         message: providerMessage,
       },
     );
@@ -112,8 +105,10 @@ async function handleOrderRejected({ orderId }) {
         html: userEmailHtml,
       }),
     ]);
+    await transaction.commit();
   } catch (externalError) {
     errorLogger("Post-commit side effects failed:", externalError);
+    await transaction.rollback();
     throw externalError;
   }
 

@@ -106,24 +106,22 @@ export const getUserProfile = async (id) => {
     ],
   });
 
-  const recipientId =
-    user.UserRole.relatedType === "ServiceProvider"
-      ? user.UserRole.relatedId
-      : user.id;
-
-  const idType = Number.isInteger(recipientId) ? "integer" : "varchar";
-
-  // Query notifications with dynamic cast
+  const where = { isRead: false };
+  if (
+    user.UserRole.role === "service_provider_root" ||
+    user.UserRole.role === "service_provider_rep"
+  ) {
+    where.serviceProviderId === user.UserRole.role;
+  } else if (
+    user.UserRole.role === "admin" ||
+    user.UserRole.role === "super_admin"
+  ) {
+    where.isAdmin = true;
+  } else {
+    where.userId = user.id;
+  }
   const notifications = await db.Notification.count({
-    where: {
-      [Op.and]: [
-        Sequelize.where(
-          Sequelize.cast(Sequelize.col("recipient_id"), idType),
-          recipientId,
-        ),
-        { isRead: false },
-      ],
-    },
+    where,
   });
   return { user, notifications };
 };

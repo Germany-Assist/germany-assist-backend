@@ -39,13 +39,12 @@ async function handleOrderActive(data) {
   const transaction = await sequelize.transaction();
 
   try {
-    await db.Notification.create(
+    const userNotification = await db.Notification.create(
       {
         message: userMessage,
         url: "",
         type: "info",
-        recipientId: userId,
-        recipientType: "user",
+        userId: userId,
         metadata: {
           serviceProviderId,
           serviceId: service.id,
@@ -55,13 +54,12 @@ async function handleOrderActive(data) {
       { transaction },
     );
 
-    await db.Notification.create(
+    const providerNotification = await db.Notification.create(
       {
         message: providerMessage,
         url: "",
         type: "info",
-        recipientId: serviceProviderId,
-        recipientType: "service_provider",
+        serviceProviderId: serviceProviderId,
         metadata: {
           serviceProviderId,
           serviceId: service.id,
@@ -70,22 +68,19 @@ async function handleOrderActive(data) {
       },
       { transaction },
     );
-
-    await transaction.commit();
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
-
-  try {
     // socket
     socketNotificationServices.sendSocketNotification(userId, {
+      id: hashIdUtil.hashIdEncode(userNotification.id),
       message: userMessage,
     });
 
-    socketNotificationServices.sendSocketNotification(serviceProviderId, {
-      message: providerMessage,
-    });
+    socketNotificationServices.sendSocketNotificationToProvider(
+      serviceProviderId,
+      {
+        id: hashIdUtil.hashIdEncode(providerNotification.id),
+        message: providerMessage,
+      },
+    );
 
     // email template
     const html = successfulPaymentEmail({
@@ -110,8 +105,10 @@ async function handleOrderActive(data) {
         html,
       }),
     ]);
+    await transaction.commit();
   } catch (externalError) {
     errorLogger("Post-commit side effects failed:", externalError);
+    await transaction.rollback();
     throw externalError;
   }
 

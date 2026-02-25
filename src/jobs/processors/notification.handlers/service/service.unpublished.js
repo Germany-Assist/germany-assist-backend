@@ -25,27 +25,6 @@ async function handleServiceUnpublished({ serviceId }) {
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
   const providerMessage = `Successfully Unpublished service "${service.title}" with id ${hashedServiceId} please note that the service wont be live, however you can publish it any time.`;
   const transaction = await sequelize.transaction();
-  try {
-    await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        recipientId: service.ServiceProvider.id,
-        recipientType: "service_provider",
-        metadata: {
-          serviceProviderId: service.ServiceProvider.id,
-          serviceId: service.id,
-        },
-      },
-      { transaction },
-    );
-
-    await transaction.commit();
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
 
   const providerEmailHtml = serviceStatusEmail({
     title: "Service Successfully Unpublished",
@@ -57,15 +36,45 @@ async function handleServiceUnpublished({ serviceId }) {
   });
 
   try {
+    const providerNotification = await db.Notification.create(
+      {
+        message: providerMessage,
+        url: "",
+        type: "info",
+        serviceProviderId: service.ServiceProvider.id,
+        metadata: {
+          serviceProviderId: service.ServiceProvider.id,
+          serviceId: service.id,
+        },
+      },
+      { transaction },
+    );
+    const adminNotification = await db.Notification.create(
+      {
+        message: providerMessage,
+        url: "",
+        type: "info",
+        isAdmin: true,
+        metadata: {
+          serviceProviderId: service.ServiceProvider.id,
+          serviceId: service.id,
+        },
+      },
+      { transaction },
+    );
+
     socketNotificationServices.sendSocketNotificationToProvider(
       service.ServiceProvider.id,
       {
+        id: hashIdUtil.hashIdEncode(providerNotification.id),
         message: providerMessage,
       },
     );
     socketNotificationServices.sendSocketNotificationAdmin({
+      id: hashIdUtil.hashIdEncode(adminNotification.id),
       message: providerMessage,
     });
+
     await Promise.all([
       emailService.sendEmail({
         to: service.ServiceProvider.email,
@@ -73,7 +82,9 @@ async function handleServiceUnpublished({ serviceId }) {
         html: providerEmailHtml,
       }),
     ]);
+    await transaction.commit();
   } catch (externalError) {
+    await transaction.rollback();
     errorLogger("Post-commit side effects failed:", externalError);
     throw externalError;
   }

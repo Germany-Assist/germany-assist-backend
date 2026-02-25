@@ -13,7 +13,7 @@ Order.init(
     status: {
       type: DataTypes.ENUM(
         "refunded",
-        "paid",
+        "active",
         "pending_completion",
         "completed",
         "cancelled",

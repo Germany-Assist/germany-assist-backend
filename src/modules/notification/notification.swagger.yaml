@@ -26,6 +26,13 @@
           example: true
         required: false
         description: Filter by read status
+      - in: query
+        name: isAdmin
+        schema:
+          type: boolean
+          example: true
+        required: false
+        description: Filter by admin to get only admin notifications
     responses:
       "200":
         description: Successful response

@@ -1,12 +1,24 @@
+import { AppError } from "../../utils/error.class.js";
 import hashIdUtil from "../../utils/hashId.util.js";
 import notificationRepository from "./notification.repository.js";
 
-export const getAll = async (id, query) => {
+export const getAll = async (id, userType, query) => {
   const page = Math.max(Number(query.page) || 1, 1);
   const limit = Math.min(Number(query.limit) || 10, 100);
   const offset = (page - 1) * limit;
   const filters = {};
-  filters.recipientId = id;
+  if (
+    (userType === "admin" || userType === "super_admin") &&
+    query.isAdmin !== undefined
+  )
+    filters.isAdmin = query.isAdmin === "true";
+
+  if (userType === "client") filters.userId = id;
+  if (
+    userType === "service_provider_root" ||
+    userType === "service_provider_rep"
+  )
+    filters.serviceProviderId = id;
   if (query.isRead !== undefined) {
     filters.isRead = query.isRead === "true";
   }
@@ -31,18 +43,26 @@ export const getAll = async (id, query) => {
   });
   return { notifications: sanitizedNotifications, meta };
 };
-/**
- * Updates the read status of a notification.
- *
- * @param {string} recipientId - the id of the recipient
- * @returns {Promise<void>} - a promise that resolves when the operation is complete
- */
-export const updateRead = async ({ recipientId, notificationId }) => {
+
+export const updateRead = async ({ recipientId, userType, notificationId }) => {
   const notificationIdDecoded = hashIdUtil.hashIdDecode(notificationId);
-  const notification = await notificationRepository.updateRead(
-    notificationIdDecoded,
-    recipientId,
-  );
+  const filters = { id: notificationIdDecoded };
+  if (userType === "client") filters.userId = recipientId;
+  if (
+    userType === "service_provider_root" ||
+    userType === "service_provider_rep"
+  )
+    filters.serviceProviderId = recipientId;
+  if (userType === "admin" || userType === "super_admin")
+    filters.isAdmin = true;
+  const notification = await notificationRepository.updateRead(filters);
+  if (!notification[0])
+    throw new AppError(
+      404,
+      "Notification not found",
+      true,
+      "Notification not found",
+    );
   return notification;
 };
 
