@@ -16,9 +16,8 @@ import handleOrderCanceled from "./order/order.canceled.js";
 // import handleOrderAccepted from "./order/order.accepted.js";
 
 // Dispute
-// import handleDisputeRaised from "./dispute/dispute.raised.js";
-// import handleDisputeUpdated from "./dispute/dispute.updated.js";
-// import handleDisputeClosed from "./dispute/dispute.closed.js";
+import handleDisputeRaised from "./dispute/dispute.raised.js";
+import handleDisputeUpdated from "./dispute/dispute.updated.js";
 
 export const handlers = {
   // Service
@@ -38,7 +37,6 @@ export const handlers = {
   // [NOTIFICATION_EVENTS.ORDER.ACCEPTED]: handleOrderAccepted,
 
   // Dispute
-  // [NOTIFICATION_EVENTS.DISPUTE.RAISED]: handleDisputeRaised,
-  // [NOTIFICATION_EVENTS.DISPUTE.UPDATED]: handleDisputeUpdated,
-  // [NOTIFICATION_EVENTS.DISPUTE.CLOSED]: handleDisputeClosed,
+  [NOTIFICATION_EVENTS.DISPUTE.RAISED]: handleDisputeRaised,
+  [NOTIFICATION_EVENTS.DISPUTE.UPDATED]: handleDisputeUpdated,
 };

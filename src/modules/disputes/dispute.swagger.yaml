@@ -1,3 +1,90 @@
+/dispute/create:
+  post:
+    tags: [Disputes]
+    summary: Open a dispute
+    description: >
+      Allows an authenticated client to raise a dispute for an order.
+      The order must exist, belong to the authenticated user (buyer),
+      and be in either `active` or `pending_completion` status.
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - orderId
+              - reason
+              - description
+            properties:
+              orderId:
+                type: string
+                description: The encoded order ID
+                example: "ord_654321"
+              reason:
+                type: string
+                description: Reason for raising the dispute
+                enum:
+                  [service_not_delivered, poor_quality, late_delivery, other]
+                example: service_not_delivered
+              description:
+                type: string
+                description: Detailed explanation of the dispute
+                example: "The provider did not deliver the agreed work within the deadline."
+    responses:
+      201:
+        description: Dispute successfully created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+      400:
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Validation error
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+      403:
+        description: Forbidden (invalid buyer or missing client role)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: invalid buyer
+      404:
+        description: Order not found or invalid action
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: invalid order
+
 /dispute:
   get:
     tags: [Disputes]
@@ -243,6 +330,68 @@
                   example: Unauthorized
       403:
         description: Forbidden (user not admin)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Forbidden
+      404:
+        description: Dispute not found
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Dispute not found
+
+/dispute/{id}/cancel:
+  patch:
+    tags: [Disputes]
+    summary: Cancel a dispute
+    description: >
+      Allows a client to cancel their own dispute.
+      The dispute must belong to the authenticated client.
+      The dispute status will be updated to `cancelled`.
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: The encoded dispute ID to cancel
+    responses:
+      200:
+        description: Dispute successfully cancelled
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: Dispute Cancelled
+      401:
+        description: Unauthorized (user not authenticated)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+      403:
+        description: Forbidden (user is not a client or does not own the dispute)
         content:
           application/json:
             schema:

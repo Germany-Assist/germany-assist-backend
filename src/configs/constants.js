@@ -24,7 +24,6 @@ export const NOTIFICATION_EVENTS = {
   DISPUTE: {
     RAISED: "dispute.raised",
     UPDATED: "dispute.updated",
-    CLOSED: "dispute.closed",
   },
 };
 

@@ -120,6 +120,8 @@ export const defineConstrains = () => {
   });
 
   Dispute.belongsTo(Order, { foreignKey: "orderId" });
+  Dispute.belongsTo(ServiceProvider, { foreignKey: "serviceProviderId" });
+  Dispute.belongsTo(User, { foreignKey: "userId" });
   Order.hasOne(Dispute, { foreignKey: "orderId" });
   //user
   User.hasMany(Order, { foreignKey: "userId" });
@@ -132,6 +134,7 @@ export const defineConstrains = () => {
   User.hasMany(Review, { foreignKey: "userId" });
   User.hasOne(UserRole, { foreignKey: "userId" });
   User.hasMany(Favorite, { foreignKey: "userId" });
+  User.hasMany(Dispute, { foreignKey: "userId" });
   User.hasMany(Notification, { foreignKey: "userId" });
   User.belongsToMany(Permission, {
     through: UserPermission,
@@ -213,6 +216,7 @@ export const defineConstrains = () => {
   // service provider
   ServiceProvider.hasMany(Service);
   ServiceProvider.hasMany(Coupon);
+  ServiceProvider.hasMany(Dispute, { foreignKey: "serviceProviderId" });
   ServiceProvider.hasMany(Asset);
   ServiceProvider.hasMany(UserRole, {
     foreignKey: "relatedId",

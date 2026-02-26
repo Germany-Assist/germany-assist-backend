@@ -5,6 +5,14 @@ import disputeRepository from "./dispute.repository.js";
 import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
 import notificationQueue from "../../jobs/queues/notification.queue.js";
 import orderService from "../order/order.services.js";
+/**
+ * Open a dispute for an order.
+ * @param {object} data - data object containing the order id, reason and description.
+ * @param {object} auth - auth object containing the user id.
+ * @throws {AppError} if the order is invalid or the user is not the buyer.
+ * @throws {AppError} if the order status is not active or pending completion.
+ * @returns {Promise<void>}
+ */
 export async function openDispute(data, auth) {
   const { description, reason } = data;
   const orderId = hashIdUtil.hashIdDecode(data.orderId);
@@ -15,7 +23,7 @@ export async function openDispute(data, auth) {
     throw new AppError(403, "invalid buyer", false, "invalid buyer");
   if (order.status !== "active" && order.status !== "pending_completion")
     throw new AppError(404, "invalid action", true, "invalid action");
-  await disputeRepository.create({
+  const dispute = await disputeRepository.create({
     userId: auth.id,
     serviceProviderId: order.serviceProviderId,
     orderId,
@@ -23,9 +31,8 @@ export async function openDispute(data, auth) {
     description: description,
   });
   notificationQueue.add(NOTIFICATION_EVENTS.DISPUTE.RAISED, {
-    orderId,
+    disputeId: dispute.id,
   });
-  return;
 }
 
 export async function listDisputes(query, auth) {
@@ -79,32 +86,49 @@ export async function markInReview(id, user) {
   }
   dispute.status = "in_review";
   await dispute.save();
+  notificationQueue.add(NOTIFICATION_EVENTS.DISPUTE.UPDATED, {
+    disputeId: dispute.id,
+    status: "in_review",
+  });
   return dispute;
 }
 
 export async function resolveDispute(disputeId, resolution) {
-  const validResolutions = [
-    "buyer_won",
-    "provider_won",
-    "partial",
-    "cancelled",
-  ];
+  const validResolutions = ["buyer_won", "provider_won", "cancelled"];
   if (!validResolutions.includes(resolution)) {
     throw new Error("Invalid resolution");
   }
-  const status = resolution === "cancelled" ? "cancelled" : "resolved";
-  const dispute = await disputeRepository.updateDispute(disputeId, {
-    status,
+  const filters = { id: disputeId };
+  const dispute = await disputeRepository.updateDispute(filters, {
+    status: "resolved",
+    resolution,
+  });
+  notificationQueue.add(NOTIFICATION_EVENTS.DISPUTE.UPDATED, {
+    disputeId: dispute.id,
+    status: "resolved",
     resolution,
   });
   // i should update the order status and flow
   return dispute;
 }
-
+export async function cancelDispute(disputeId, clientId) {
+  const filters = { id: disputeId, userId: clientId };
+  const dispute = await disputeRepository.updateDispute(filters, {
+    status: "resolved",
+    resolution: "cancelled",
+  });
+  notificationQueue.add(NOTIFICATION_EVENTS.DISPUTE.UPDATED, {
+    disputeId: dispute.id,
+    status: "resolved",
+    resolution: "cancelled",
+  });
+  return;
+}
 const disputeService = {
   resolveDispute,
   markInReview,
   listDisputes,
   openDispute,
+  cancelDispute,
 };
 export default disputeService;

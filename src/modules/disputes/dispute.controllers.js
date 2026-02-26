@@ -4,8 +4,9 @@ import authUtil from "../../utils/authorize.util.js";
 import hashIdUtil from "../../utils/hashId.util.js";
 export async function openDispute(req, res, next) {
   try {
+    await authUtil.checkRoleAndPermission(req.auth, ["client"]);
     await disputeService.openDispute(req.body, req.auth);
-    res.status(201);
+    res.status(201).json({ success: true });
   } catch (err) {
     next(err);
   }
@@ -52,10 +53,21 @@ export async function resolveDispute(req, res, next) {
     next(err);
   }
 }
+export async function cancelDispute(req, res, next) {
+  try {
+    await authUtil.checkRoleAndPermission(req.auth, ["client"]);
+    const disputeId = hashIdUtil.hashIdDecode(req.params.id);
+    await disputeService.cancelDispute(disputeId, req.auth.id);
+    res.status(200).json({ success: true, message: "Dispute Cancelled" });
+  } catch (err) {
+    next(err);
+  }
+}
 const disputeController = {
   openDispute,
   listDisputes,
   markInReview,
   resolveDispute,
+  cancelDispute,
 };
 export default disputeController;

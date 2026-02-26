@@ -1,4 +1,5 @@
 import db from "../../database/index.js";
+import { AppError } from "../../utils/error.class.js";
 
 export function create(data) {
   return db.Dispute.create(data);
@@ -35,9 +36,10 @@ export async function findAll({ page = 1, limit = 20, filters }) {
   };
 }
 
-export async function updateDispute(disputeId, updates) {
-  const dispute = await db.Dispute.findByPk(disputeId);
-  if (!dispute) throw new Error("Dispute not found");
+export async function updateDispute(filters, updates) {
+  const dispute = await db.Dispute.findOne({ where: filters });
+  if (!dispute)
+    throw new AppError(404, "Dispute not found", false, "Dispute not found");
   await dispute.update(updates);
   return dispute;
 }

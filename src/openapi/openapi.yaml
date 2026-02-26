@@ -19,10 +19,14 @@ components:
 paths:
   /dispute:
     $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute"
+  /dispute/create:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1create"
   /dispute/{id}/in-review:
     $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1in-review"
   /dispute/{id}/resolve:
     $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1resolve"
+  /dispute/{id}/cancel:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1cancel"
   /notification:
     $ref: "../modules/notification/notification.swagger.yaml#/~1notification"
   /notification/{id}:

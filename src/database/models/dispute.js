@@ -37,7 +37,7 @@ Dispute.init(
       defaultValue: "open",
     },
     resolution: {
-      type: DataTypes.ENUM("buyer_won", "provider_won", "partial", "cancelled"),
+      type: DataTypes.ENUM("buyer_won", "provider_won", "cancelled"),
       allowNull: true,
     },
     resolvedAt: {
