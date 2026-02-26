@@ -1,10 +1,10 @@
 import db from "../../../../database/index.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import { sequelize } from "../../../../configs/database.js";
-import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
+import emailQueue from "../../../../jobs/queues/email.queue.js";
 
 // triggered when the provider closes onetime order
 // triggered when the job closes the timeline order
@@ -82,6 +82,8 @@ async function handleOrderClosed({ orderId }) {
       { transaction },
     );
 
+    await transaction.commit();
+
     // Socket Notifications
     socketNotificationServices.sendSocketNotification(order.User.id, {
       id: hashIdUtil.hashIdEncode(userNotification.id),
@@ -96,22 +98,23 @@ async function handleOrderClosed({ orderId }) {
       },
     );
 
-    await Promise.all([
-      emailService.sendEmail({
-        to: order.ServiceProvider.email,
-        subject: "Order Successfully Closed - Germany Assist",
-        html: providerEmailHtml,
-      }),
-      emailService.sendEmail({
-        to: order.User.email,
-        subject: "Your Order Has Been Closed - Germany Assist",
-        html: userEmailHtml,
-      }),
-    ]);
-    await transaction.commit();
+    // Queue emails
+    emailQueue.add("sendEmail", {
+      to: order.ServiceProvider.email,
+      subject: "Order Successfully Closed - Germany Assist",
+      html: providerEmailHtml,
+    });
+    emailQueue.add("sendEmail", {
+      to: order.User.email,
+      subject: "Your Order Has Been Closed - Germany Assist",
+      html: userEmailHtml,
+    });
+
   } catch (externalError) {
-    errorLogger("Post-commit side effects failed:", externalError);
-    await transaction.rollback();
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling order closed:", externalError);
     throw externalError;
   }
 

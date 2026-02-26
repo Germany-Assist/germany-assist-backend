@@ -1,11 +1,12 @@
 import db from "../../../../database/index.js";
-import emailService from "../../../../services/email/email.service.js";
-import { disputeEmail } from "../../../../services/email/templates/disputeTemplate.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
+import { disputeEmail } from "../../../../services/email/templates/disputeTemplate.js";
 import { AppError } from "../../../../utils/error.class.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import { sequelize } from "../../../../configs/database.js";
+import emailQueue from "../../../../jobs/queues/email.queue.js";
+
 //only on creation
 export default async function handleDisputeRaised({ disputeId }) {
   const transaction = await sequelize.transaction();
@@ -21,7 +22,7 @@ export default async function handleDisputeRaised({ disputeId }) {
     });
 
     if (!dispute) {
-      throw new AppError(404, `Dispute ${hashedDisputeId} not found`, true);
+      throw new AppError(404, `Dispute ${disputeId} not found`, true);
     }
 
     const hashedDisputeId = hashIdUtil.hashIdEncode(disputeId);
@@ -104,21 +105,23 @@ export default async function handleDisputeRaised({ disputeId }) {
       message,
     });
 
-    await Promise.all([
-      emailService.sendEmail({
-        to: dispute.ServiceProvider.email,
-        subject: "Dispute Raised - Germany Assist",
-        html: providerEmailHtml,
-      }),
-      emailService.sendEmail({
-        to: dispute.User.email,
-        subject: "Dispute Raised - Germany Assist",
-        html: userEmailHtml,
-      }),
-    ]);
+    // Queue emails
+    emailQueue.add("sendEmail", {
+      to: dispute.ServiceProvider.email,
+      subject: "Dispute Raised - Germany Assist",
+      html: providerEmailHtml,
+    });
+    emailQueue.add("sendEmail", {
+      to: dispute.User.email,
+      subject: "Dispute Raised - Germany Assist",
+      html: userEmailHtml,
+    });
+
   } catch (error) {
-    await transaction.rollback();
-    errorLogger(error);
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling dispute raised:", error);
     throw error;
   }
 

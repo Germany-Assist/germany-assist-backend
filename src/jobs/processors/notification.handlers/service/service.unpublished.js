@@ -1,16 +1,17 @@
 import db from "../../../../database/index.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import { sequelize } from "../../../../configs/database.js";
-import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
-import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
 import serviceStatusEmail from "../../../../services/email/templates/serviceStatusEmail.js";
-// called only after the service is unpublished
+import emailQueue from "../../../../jobs/queues/email.queue.js";
+
+// Called only after the service is unpublished
 async function handleServiceUnpublished({ serviceId }) {
   if (!serviceId) {
     throw new Error("serviceId is required");
   }
+
   const service = await db.Service.findOne({
     where: { id: serviceId },
     include: [
@@ -19,12 +20,11 @@ async function handleServiceUnpublished({ serviceId }) {
   });
 
   if (!service) {
-    throw new Error(`service ${serviceId} not found`);
+    throw new Error(`Service ${serviceId} not found`);
   }
 
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
-  const providerMessage = `Successfully Unpublished service "${service.title}" with id ${hashedServiceId} please note that the service wont be live, however you can publish it any time.`;
-  const transaction = await sequelize.transaction();
+  const providerMessage = `Successfully Unpublished service "${service.title}" with id ${hashedServiceId}. The service won’t be live, but you can publish it anytime.`;
 
   const providerEmailHtml = serviceStatusEmail({
     title: "Service Successfully Unpublished",
@@ -35,34 +35,43 @@ async function handleServiceUnpublished({ serviceId }) {
     status: "Unpublished",
   });
 
-  try {
-    const providerNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        serviceProviderId: service.ServiceProvider.id,
-        metadata: {
-          serviceProviderId: service.ServiceProvider.id,
-          serviceId: service.id,
-        },
-      },
-      { transaction },
-    );
-    const adminNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        isAdmin: true,
-        metadata: {
-          serviceProviderId: service.ServiceProvider.id,
-          serviceId: service.id,
-        },
-      },
-      { transaction },
-    );
+  const transaction = await sequelize.transaction();
 
+  try {
+    // Create notifications in parallel
+    const [providerNotification, adminNotification] = await Promise.all([
+      db.Notification.create(
+        {
+          message: providerMessage,
+          url: "",
+          type: "info",
+          serviceProviderId: service.ServiceProvider.id,
+          metadata: {
+            serviceProviderId: service.ServiceProvider.id,
+            serviceId: service.id,
+          },
+        },
+        { transaction },
+      ),
+      db.Notification.create(
+        {
+          message: providerMessage,
+          url: "",
+          type: "info",
+          isAdmin: true,
+          metadata: {
+            serviceProviderId: service.ServiceProvider.id,
+            serviceId: service.id,
+          },
+        },
+        { transaction },
+      ),
+    ]);
+
+    // Commit DB changes first
+    await transaction.commit();
+
+    // Fire-and-forget socket notifications
     socketNotificationServices.sendSocketNotificationToProvider(
       service.ServiceProvider.id,
       {
@@ -75,21 +84,21 @@ async function handleServiceUnpublished({ serviceId }) {
       message: providerMessage,
     });
 
-    await Promise.all([
-      emailService.sendEmail({
-        to: service.ServiceProvider.email,
-        subject: "Service Unpublished - Germany Assist",
-        html: providerEmailHtml,
-      }),
-    ]);
-    await transaction.commit();
-  } catch (externalError) {
-    await transaction.rollback();
-    errorLogger("Post-commit side effects failed:", externalError);
-    throw externalError;
-  }
+    // Queue email
+    emailQueue.add("sendEmail", {
+      to: service.ServiceProvider.email,
+      subject: "Service Unpublished - Germany Assist",
+      html: providerEmailHtml,
+    });
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling service unpublished:", error);
+    throw error;
+  }
 }
 
 export default handleServiceUnpublished;

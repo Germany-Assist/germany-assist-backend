@@ -1,16 +1,18 @@
 import db from "../../../../database/index.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import { sequelize } from "../../../../configs/database.js";
-import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
-import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
 import serviceStatusEmail from "../../../../services/email/templates/serviceStatusEmail.js";
-// called only after the service is created
+import emailQueue from "../../../../jobs/queues/email.queue.js";
+
+// Called only after the service is created
 async function handleServiceCreated({ serviceId }) {
   if (!serviceId) {
     throw new Error("serviceId is required");
   }
+
+  // Fetch service with provider info
   const service = await db.Service.findOne({
     where: { id: serviceId },
     include: [
@@ -19,12 +21,11 @@ async function handleServiceCreated({ serviceId }) {
   });
 
   if (!service) {
-    throw new Error(`service ${serviceId} not found`);
+    throw new Error(`Service ${serviceId} not found`);
   }
 
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
-  const providerMessage = `Successfully Created new service "${service.title}" with id ${hashedServiceId} you can publish it any time please note that the service still requires admin approval to be live and visible.`;
-  const transaction = await sequelize.transaction();
+  const providerMessage = `Successfully created new service "${service.title}" with id ${hashedServiceId}. You can publish it anytime. Note that the service still requires admin approval to be live and visible.`;
 
   const providerEmailHtml = serviceStatusEmail({
     title: "Service Successfully Created",
@@ -35,34 +36,42 @@ async function handleServiceCreated({ serviceId }) {
     status: "Created",
   });
 
+  // Use a transaction for DB writes
+  const transaction = await sequelize.transaction();
   try {
-    const providerNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        serviceProviderId: service.ServiceProvider.id,
-        metadata: {
+    // Create notifications
+    const [providerNotification, adminNotification] = await Promise.all([
+      db.Notification.create(
+        {
+          message: providerMessage,
+          url: "",
+          type: "info",
           serviceProviderId: service.ServiceProvider.id,
-          serviceId: service.id,
+          metadata: {
+            serviceProviderId: service.ServiceProvider.id,
+            serviceId: service.id,
+          },
         },
-      },
-      { transaction },
-    );
-    const adminNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        isAdmin: true,
-        metadata: {
-          serviceProviderId: service.ServiceProvider.id,
-          serviceId: service.id,
+        { transaction },
+      ),
+      db.Notification.create(
+        {
+          message: providerMessage,
+          url: "",
+          type: "info",
+          isAdmin: true,
+          metadata: {
+            serviceProviderId: service.ServiceProvider.id,
+            serviceId: service.id,
+          },
         },
-      },
-      { transaction },
-    );
+        { transaction },
+      ),
+    ]);
 
+    await transaction.commit();
+
+    // Send socket notifications (fire-and-forget style)
     socketNotificationServices.sendSocketNotificationToProvider(
       service.ServiceProvider.id,
       {
@@ -74,20 +83,20 @@ async function handleServiceCreated({ serviceId }) {
       id: hashIdUtil.hashIdEncode(adminNotification.id),
       message: providerMessage,
     });
-    await Promise.all([
-      emailService.sendEmail({
-        to: service.ServiceProvider.email,
-        subject: "Service Created - Germany Assist",
-        html: providerEmailHtml,
-      }),
-    ]);
-    await transaction.commit();
-  } catch (externalError) {
-    errorLogger("Post-commit side effects failed:", externalError);
-    throw externalError;
-  }
+    emailQueue.add("sendEmail", {
+      to: service.ServiceProvider.email,
+      subject: "Service Created - Germany Assist",
+      html: providerEmailHtml,
+    });
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling service created:", error);
+    throw error;
+  }
 }
 
 export default handleServiceCreated;

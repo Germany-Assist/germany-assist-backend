@@ -1,9 +1,12 @@
 import { sequelize } from "../../../../configs/database.js";
 import db from "../../../../database/index.js";
-import emailService from "../../../../services/email/email.service.js";
 import { disputeEmail } from "../../../../services/email/templates/disputeTemplate.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
+import { AppError } from "../../../../utils/error.class.js";
+import { errorLogger } from "../../../../utils/loggers.js";
+import emailQueue from "../../../../jobs/queues/email.queue.js";
+
 //on any update
 export default async function handleDisputeUpdated({
   disputeId,
@@ -22,25 +25,27 @@ export default async function handleDisputeUpdated({
         { model: db.ServiceProvider, attributes: ["id", "email", "name"] },
       ],
     });
-    const hashedOrderId = hashIdUtil.hashIdEncode(dispute.Order.id);
 
     if (!dispute) {
-      throw new Error(`Dispute ${hashedDisputeId} not found`);
+      throw new AppError(404, `Dispute ${hashedDisputeId} not found`, true);
     }
+
+    const hashedOrderId = hashIdUtil.hashIdEncode(dispute.Order.id);
     const providerMessage = `Update for dispute ${hashedDisputeId} for order "${hashedOrderId} the dispute was ${status} ${resolution ? `with resolution ${resolution}` : ""}.`;
 
     const userEmailHtml = disputeEmail({
       title: `Dispute Update ${status}`,
       recipientName: dispute.User.email,
       message: providerMessage,
-      orderId: hashedDisputeId,
+      orderId: hashedOrderId,
       disputeId: hashedDisputeId,
     });
+
     const providerEmailHtml = disputeEmail({
       title: `Dispute Update ${status}`,
-      recipientName: dispute.User.email,
+      recipientName: dispute.ServiceProvider.name || dispute.ServiceProvider.email,
       message: providerMessage,
-      orderId: hashedDisputeId,
+      orderId: hashedOrderId,
       disputeId: hashedDisputeId,
     });
 
@@ -63,6 +68,7 @@ export default async function handleDisputeUpdated({
       },
       { transaction },
     );
+
     const userNotification = await db.Notification.create(
       {
         message: providerMessage,
@@ -72,7 +78,9 @@ export default async function handleDisputeUpdated({
       },
       { transaction },
     );
+
     await transaction.commit();
+
     socketNotificationServices.sendSocketNotificationToProvider(
       dispute.ServiceProvider.id,
       {
@@ -80,30 +88,34 @@ export default async function handleDisputeUpdated({
         message: providerMessage,
       },
     );
+
     socketNotificationServices.sendSocketNotificationAdmin({
       id: hashIdUtil.hashIdEncode(adminNotification.id),
       message: providerMessage,
     });
+
     socketNotificationServices.sendSocketNotification(dispute.User.id, {
       id: hashIdUtil.hashIdEncode(userNotification.id),
       message: providerMessage,
     });
-    await Promise.all([
-      emailService.sendEmail({
-        to: dispute.ServiceProvider.email,
-        subject: "Dispute Updated - Germany Assist",
-        html: providerEmailHtml,
-      }),
-      emailService.sendEmail({
-        to: dispute.User.email,
-        subject: "Dispute Updated - Germany Assist",
-        html: userEmailHtml,
-      }),
-    ]);
+
+    // Queue emails
+    emailQueue.add("sendEmail", {
+      to: dispute.ServiceProvider.email,
+      subject: "Dispute Updated - Germany Assist",
+      html: providerEmailHtml,
+    });
+    emailQueue.add("sendEmail", {
+      to: dispute.User.email,
+      subject: "Dispute Updated - Germany Assist",
+      html: userEmailHtml,
+    });
+
   } catch (externalError) {
-    console.log(externalError);
-    errorLogger(externalError);
-    await transaction.rollback();
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling dispute update:", externalError);
     throw externalError;
   }
 

@@ -6,6 +6,7 @@ import {
   EMAIL_SMTP_PORT,
   EMAIL_USER,
 } from "../../configs/email.config.js";
+import { NODE_ENV } from "../../configs/serverConfig.js";
 
 class EmailService {
   constructor() {
@@ -19,7 +20,6 @@ class EmailService {
       },
     });
   }
-
   async sendEmail({ to, subject, html, text }) {
     try {
       await this.transporter.sendMail({
@@ -31,11 +31,9 @@ class EmailService {
       });
       infoLogger(`📧 Email sent to ${to} for ${subject}`);
     } catch (err) {
-      errorLogger(
-        `❌ Failed to send email for ${subject} to ${to}:`,
-        err.message,
-      );
-      throw err;
+      errorLogger(err);
+      if (NODE_ENV !== "production") throw err;
+      return;
     }
   }
 }

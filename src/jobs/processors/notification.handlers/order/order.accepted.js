@@ -3,10 +3,11 @@
 import db from "../../../../database/index.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import { sequelize } from "../../../../configs/database.js";
-import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
+import emailQueue from "../../../../jobs/queues/email.queue.js";
+
 // called only after the provider accepted the order
 async function handleOrderAccepted({ orderId }) {
   if (!orderId) {
@@ -81,6 +82,8 @@ async function handleOrderAccepted({ orderId }) {
       { transaction },
     );
 
+    await transaction.commit();
+
     socketNotificationServices.sendSocketNotification(order.User.id, {
       id: hashIdUtil.hashIdEncode(userNotification.id),
       message: userMessage,
@@ -93,22 +96,23 @@ async function handleOrderAccepted({ orderId }) {
       },
     );
 
-    await Promise.all([
-      emailService.sendEmail({
-        to: order.ServiceProvider.email,
-        subject: "Order Accepted - Germany Assist",
-        html: providerEmailHtml,
-      }),
-      emailService.sendEmail({
-        to: order.User.email,
-        subject: "Your Accepted - Germany Assist",
-        html: userEmailHtml,
-      }),
-    ]);
-    await transaction.commit();
+    // Queue emails
+    emailQueue.add("sendEmail", {
+      to: order.ServiceProvider.email,
+      subject: "Order Accepted - Germany Assist",
+      html: providerEmailHtml,
+    });
+    emailQueue.add("sendEmail", {
+      to: order.User.email,
+      subject: "Your Accepted - Germany Assist",
+      html: userEmailHtml,
+    });
+
   } catch (externalError) {
-    await transaction.rollback();
-    errorLogger("Post-commit side effects failed:", externalError);
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling order accepted:", externalError);
     throw externalError;
   }
 

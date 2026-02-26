@@ -1,10 +1,11 @@
 import db from "../../../../database/index.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import { sequelize } from "../../../../configs/database.js";
-import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
+import emailQueue from "../../../../jobs/queues/email.queue.js";
+
 // trigger by user successful cancel
 // trigger by provider successful cancel
 async function handleOrderCanceled({ orderId }) {
@@ -80,6 +81,8 @@ async function handleOrderCanceled({ orderId }) {
       { transaction },
     );
 
+    await transaction.commit();
+
     socketNotificationServices.sendSocketNotification(order.User.id, {
       id: hashIdUtil.hashIdEncode(userNotification.id),
       message: userMessage,
@@ -93,22 +96,23 @@ async function handleOrderCanceled({ orderId }) {
       },
     );
 
-    await Promise.all([
-      emailService.sendEmail({
-        to: order.ServiceProvider.email,
-        subject: "Order Canceled - Germany Assist",
-        html: providerEmailHtml,
-      }),
-      emailService.sendEmail({
-        to: order.User.email,
-        subject: "Order Canceled - Germany Assist",
-        html: userEmailHtml,
-      }),
-    ]);
-    await transaction.commit();
+    // Queue emails
+    emailQueue.add("sendEmail", {
+      to: order.ServiceProvider.email,
+      subject: "Order Canceled - Germany Assist",
+      html: providerEmailHtml,
+    });
+    emailQueue.add("sendEmail", {
+      to: order.User.email,
+      subject: "Order Canceled - Germany Assist",
+      html: userEmailHtml,
+    });
+
   } catch (externalError) {
-    errorLogger("Post-commit side effects failed:", externalError);
-    await transaction.rollback();
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling order canceled:", externalError);
     throw externalError;
   }
 

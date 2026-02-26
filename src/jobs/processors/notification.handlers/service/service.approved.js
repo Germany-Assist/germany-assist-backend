@@ -1,18 +1,18 @@
-//this not used for now its just for legacy
-
 import db from "../../../../database/index.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import { sequelize } from "../../../../configs/database.js";
-import emailService from "../../../../services/email/email.service.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
-import { orderStatusEmail } from "../../../../services/email/templates/orderStatusEmail.js";
 import serviceStatusEmail from "../../../../services/email/templates/serviceStatusEmail.js";
-// called only after the admin approves the service
+import emailQueue from "../../../../jobs/queues/email.queue.js";
+
+// Called only after the admin approves the service
 async function handleServiceApproved({ serviceId }) {
   if (!serviceId) {
     throw new Error("serviceId is required");
   }
+
+  // Fetch service with provider info
   const service = await db.Service.findOne({
     where: { id: serviceId },
     include: [
@@ -21,14 +21,11 @@ async function handleServiceApproved({ serviceId }) {
   });
 
   if (!service) {
-    throw new Error(`service ${serviceId} not found`);
+    throw new Error(`Service ${serviceId} not found`);
   }
 
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
-
   const providerMessage = `Successfully Admin Approved service "${service.title}" with id ${hashedServiceId}.`;
-
-  const transaction = await sequelize.transaction();
 
   const providerEmailHtml = serviceStatusEmail({
     title: "Service Successfully Approved",
@@ -39,34 +36,43 @@ async function handleServiceApproved({ serviceId }) {
     status: "Approved",
   });
 
-  try {
-    const providerNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        serviceProviderId: service.ServiceProvider.id,
-        metadata: {
-          serviceProviderId: service.ServiceProvider.id,
-          serviceId: service.id,
-        },
-      },
-      { transaction },
-    );
-    const adminNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        isAdmin: true,
-        metadata: {
-          serviceProviderId: service.ServiceProvider.id,
-          serviceId: service.id,
-        },
-      },
-      { transaction },
-    );
+  const transaction = await sequelize.transaction();
 
+  try {
+    // Create notifications in parallel
+    const [providerNotification, adminNotification] = await Promise.all([
+      db.Notification.create(
+        {
+          message: providerMessage,
+          url: "",
+          type: "info",
+          serviceProviderId: service.ServiceProvider.id,
+          metadata: {
+            serviceProviderId: service.ServiceProvider.id,
+            serviceId: service.id,
+          },
+        },
+        { transaction },
+      ),
+      db.Notification.create(
+        {
+          message: providerMessage,
+          url: "",
+          type: "info",
+          isAdmin: true,
+          metadata: {
+            serviceProviderId: service.ServiceProvider.id,
+            serviceId: service.id,
+          },
+        },
+        { transaction },
+      ),
+    ]);
+
+    // Commit DB changes first
+    await transaction.commit();
+
+    // Send socket notifications (fire-and-forget)
     socketNotificationServices.sendSocketNotificationToProvider(
       service.ServiceProvider.id,
       {
@@ -78,21 +84,22 @@ async function handleServiceApproved({ serviceId }) {
       id: hashIdUtil.hashIdEncode(adminNotification.id),
       message: providerMessage,
     });
-    await Promise.all([
-      emailService.sendEmail({
-        to: service.ServiceProvider.email,
-        subject: "Service Approved - Germany Assist",
-        html: providerEmailHtml,
-      }),
-    ]);
-    await transaction.commit();
-  } catch (externalError) {
-    errorLogger("Post-commit side effects failed:", externalError);
-    await transaction.rollback();
-    throw externalError;
-  }
 
-  return { success: true };
+    // Queue email
+    emailQueue.add("sendEmail", {
+      to: service.ServiceProvider.email,
+      subject: "Service Approved - Germany Assist",
+      html: providerEmailHtml,
+    });
+
+    return { success: true };
+  } catch (error) {
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling service approval:", error);
+    throw error;
+  }
 }
 
 export default handleServiceApproved;

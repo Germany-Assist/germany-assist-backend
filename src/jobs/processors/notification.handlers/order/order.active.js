@@ -1,10 +1,12 @@
 import db from "../../../../database/index.js";
 import socketNotificationServices from "../../../../sockets/services/notificationService.js";
 import { sequelize } from "../../../../configs/database.js";
-import emailService from "../../../../services/email/email.service.js";
 import { AppError } from "../../../../utils/error.class.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { successfulPaymentEmail } from "../../../../services/email/templates/successfulPayment.js";
+import emailQueue from "../../../../jobs/queues/email.queue.js";
+import { errorLogger } from "../../../../utils/loggers.js";
+
 // triggered on successful payment
 async function handleOrderActive(data) {
   const {
@@ -68,6 +70,9 @@ async function handleOrderActive(data) {
       },
       { transaction },
     );
+
+    await transaction.commit();
+
     // socket
     socketNotificationServices.sendSocketNotification(userId, {
       id: hashIdUtil.hashIdEncode(userNotification.id),
@@ -92,23 +97,23 @@ async function handleOrderActive(data) {
       amount: amount / 100,
     });
 
-    // send emails in parallel
-    await Promise.all([
-      emailService.sendEmail({
-        to: service.ServiceProvider?.email,
-        subject: "Successful Purchase from Germany-Assist",
-        html,
-      }),
-      emailService.sendEmail({
-        to: user.email,
-        subject: "Successful Purchase from Germany-Assist",
-        html,
-      }),
-    ]);
-    await transaction.commit();
+    // Queue emails in parallel
+    emailQueue.add("sendEmail", {
+      to: service.ServiceProvider?.email,
+      subject: "Successful Purchase from Germany-Assist",
+      html,
+    });
+    emailQueue.add("sendEmail", {
+      to: user.email,
+      subject: "Successful Purchase from Germany-Assist",
+      html,
+    });
+
   } catch (externalError) {
-    errorLogger("Post-commit side effects failed:", externalError);
-    await transaction.rollback();
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
+    errorLogger("Failed handling order active:", externalError);
     throw externalError;
   }
 
