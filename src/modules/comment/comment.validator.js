@@ -3,9 +3,11 @@ import hashIdUtil from "../../utils/hashId.util.js";
 
 const allowedTypes = ["post", "comment"];
 export const commentValidator = [
-  body("body")
+  body("commentBody")
     .trim()
     .isString()
+    .withMessage("Body must be a string")
+    .notEmpty()
     .withMessage("comment body should only be text")
     .isLength({ max: 500, min: 2 })
     .withMessage("Comment body cannot exceed 500 characters or be less that 2"),

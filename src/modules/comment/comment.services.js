@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import db from "../../database/index.js";
 import hashIdUtil from "../../utils/hashId.util.js";
 import { AppError } from "../../utils/error.class.js";
+import commentMappers from "./comment.mapper.js";
 
 async function createNewComment(body, auth, t) {
   const postId = hashIdUtil.hashIdDecode(body.postId);
@@ -13,7 +14,7 @@ async function createNewComment(body, auth, t) {
     userId: auth.id,
     parentId: comment_id ?? null,
     postId,
-    body,
+    body: body.commentBody,
   };
   await db.Comment.create(data, t);
 }
@@ -47,8 +48,30 @@ async function canCommentOnPost(userId, postId) {
   return can;
 }
 
+async function getPostComments(postId, auth) {
+  const unHashedPostId = hashIdUtil.hashIdDecode(postId);
+  // i used the same check to see if the user can comment on the post its basically the same
+  let able = await commentServices.canCommentOnPost(auth.id, unHashedPostId);
+  if (!able)
+    throw new AppError(403, "permission denied", true, "permission denied");
+  const comments = await db.Comment.findAll({
+    where: { postId: unHashedPostId },
+    include: [
+      {
+        model: db.User,
+        as: "user",
+        attributes: ["id", "firstName", "lastName", "email"],
+      },
+    ],
+    order: [["createdAt", "DESC"]],
+  });
+
+  return commentMappers.sanitizeComments(comments);
+}
+
 const commentServices = {
   createNewComment,
+  getPostComments,
   canCommentOnPost,
 };
 export default commentServices;

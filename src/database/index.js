@@ -64,6 +64,11 @@ export const defineConstrains = () => {
     foreignKey: "parentId",
     constraints: true,
   });
+  Comment.belongsTo(User, {
+    foreignKey: "userId",
+    constraints: true,
+    as: "user",
+  });
   Comment.hasMany(Comment, {
     as: "replies",
     foreignKey: "parentId",
@@ -136,6 +141,8 @@ export const defineConstrains = () => {
   User.hasMany(Favorite, { foreignKey: "userId" });
   User.hasMany(Dispute, { foreignKey: "userId" });
   User.hasMany(Notification, { foreignKey: "userId" });
+  User.hasMany(Comment, { foreignKey: "userId", as: "comments" });
+
   User.belongsToMany(Permission, {
     through: UserPermission,
     as: "userToPermission",
