@@ -199,6 +199,54 @@
                   type: string
                   example: Forbidden
 
+/dispute/provider/response/{id}:
+  post:
+    tags: [Disputes]
+    summary: Respond to a dispute
+    description: >
+      Only accessible by service providers.
+      Sends a response to the specified dispute.
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: The encoded dispute ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              response:
+                type: string
+                description: The response to the dispute
+                example: "I dont agree with your claim."
+    responses:
+      200:
+        description: Dispute response successfully sent
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
 /dispute/{id}/in-review:
   patch:
     tags: [Disputes]

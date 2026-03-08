@@ -3,7 +3,15 @@ import disputeController from "./dispute.controllers.js";
 import jwtUtils from "../../middlewares/jwt.middleware.js";
 
 const router = express.Router();
+
 router.post("/create", jwtUtils.authenticateJwt, disputeController.openDispute);
+
+router.post(
+  "/provider/response/:id",
+  jwtUtils.authenticateJwt,
+  disputeController.providerResponse,
+);
+
 router.get("/", jwtUtils.authenticateJwt, disputeController.listDisputes);
 router.patch(
   "/:id/in-review",
