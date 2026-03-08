@@ -47,32 +47,57 @@ export const getAll = async (id, userType, query) => {
   return { notifications: sanitizedNotifications, meta };
 };
 
+const buildRecipientFilters = (recipientId, userType) => {
+  const filters = {};
+
+  if (userType === "client") {
+    filters.userId = recipientId;
+  }
+
+  if (
+    userType === "service_provider_root" ||
+    userType === "service_provider_rep"
+  ) {
+    filters.serviceProviderId = recipientId;
+  }
+
+  return filters;
+};
+
 export const updateRead = async ({
   recipientId,
   userType,
   notificationIds,
+  all = false,
+  markAs = "read",
 }) => {
+  const filters = buildRecipientFilters(recipientId, userType);
+  const isRead = markAs === "read" ? true : false;
+  if (all) {
+    return await notificationRepository.updateRead(filters, { isRead });
+  }
+  if (!notificationIds || notificationIds.length === 0) {
+    throw new AppError(400, "notificationIds are required", true);
+  }
+
   const decodedNotificationIds = notificationIds.map((id) =>
     hashIdUtil.hashIdDecode(id),
   );
-  const filters = { id: decodedNotificationIds };
-  if (userType === "client") filters.userId = recipientId;
-  if (
-    userType === "service_provider_root" ||
-    userType === "service_provider_rep"
-  )
-    filters.serviceProviderId = recipientId;
-  if (userType === "admin" || userType === "super_admin")
-    filters.isAdmin = true;
-  const notification = await notificationRepository.updateRead(filters);
-  if (!notification[0])
+
+  filters.id = decodedNotificationIds;
+  console.log(isRead);
+  const result = await notificationRepository.updateRead(filters, isRead);
+
+  if (!result[0]) {
     throw new AppError(
       404,
       "Notification not found",
       true,
       "Notification not found",
     );
-  return notification;
+  }
+
+  return result;
 };
 
 const notificationServices = { getAll, updateRead };
