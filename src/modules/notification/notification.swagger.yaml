@@ -22,8 +22,8 @@
       - in: query
         name: isRead
         schema:
-          type: boolean
-          example: true
+          type: string
+          enum: [true, false, all]
         required: false
         description: Filter by read status
       - in: query
@@ -39,21 +39,59 @@
         content:
           application/json:
             schema:
-              $ref: "../../openapi/components/schemas.yaml#/NotificationAllResponse"
+              NotificationAllResponse:
+                type: object
+                properties:
+                  notification:
+                    type: array
+                    description: Array of notification objects
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "X2QA"
+                        type:
+                          type: string
+                          example: "info"
+                        message:
+                          type: string
+                          example: "You have a new order"
+                        createdAt:
+                          type: string
+                          format: date-time
+                  metadata:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 10
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                      totalPages:
+                        type: integer
+                        example: 1
 
-/notification/{id}:
+/notification/updateAsRead:
   put:
-    tags: [Notification]
-    summary: Mark nonfiction as read
+    tags:
+      - Notification
+    summary: Mark notifications as read (receives an array of IDs)
     security:
       - bearerAuth: []
-    parameters:
-      - name: id
-        in: path
-        required: true
-        description: The hashed notification ID
-        schema:
-          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            description: Array of hashed notification IDs
+            items:
+              type: string
     responses:
       "200":
         description: Successful response

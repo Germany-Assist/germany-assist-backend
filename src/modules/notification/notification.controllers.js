@@ -13,12 +13,12 @@ export const getAll = async (req, res, next) => {
 export const updateRead = async (req, res, next) => {
   try {
     const id = req.auth.relatedId ? req.auth.relatedId : req.auth.id;
-    const notificationId = req.params.id;
+    const notificationIds = req.body;
     const userType = req.auth.role;
     await notificationServices.updateRead({
       recipientId: id,
       userType,
-      notificationId,
+      notificationIds,
     });
     res.status(200).json({ message: "Notification updated successfully" });
   } catch (error) {

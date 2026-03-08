@@ -9,7 +9,7 @@ notificationRouter.get(
   notificationController.getAll,
 );
 notificationRouter.put(
-  "/:id",
+  "/updateAsRead",
   jwtUtils.authenticateJwt,
   notificationController.updateRead,
 );

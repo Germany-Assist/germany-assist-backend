@@ -19,8 +19,11 @@ export const getAll = async (id, userType, query) => {
     userType === "service_provider_rep"
   )
     filters.serviceProviderId = id;
-  if (query.isRead !== undefined) {
+
+  if (query.isRead !== "all") {
     filters.isRead = query.isRead === "true";
+    if (query.isRead === "false" || query.isRead === undefined)
+      filters.isRead = false;
   }
   const [rows, count] = await notificationRepository.getAll(
     limit,
@@ -44,9 +47,15 @@ export const getAll = async (id, userType, query) => {
   return { notifications: sanitizedNotifications, meta };
 };
 
-export const updateRead = async ({ recipientId, userType, notificationId }) => {
-  const notificationIdDecoded = hashIdUtil.hashIdDecode(notificationId);
-  const filters = { id: notificationIdDecoded };
+export const updateRead = async ({
+  recipientId,
+  userType,
+  notificationIds,
+}) => {
+  const decodedNotificationIds = notificationIds.map((id) =>
+    hashIdUtil.hashIdDecode(id),
+  );
+  const filters = { id: decodedNotificationIds };
   if (userType === "client") filters.userId = recipientId;
   if (
     userType === "service_provider_root" ||
