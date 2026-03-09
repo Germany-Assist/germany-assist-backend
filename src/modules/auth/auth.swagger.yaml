@@ -108,3 +108,23 @@
         description: User verified manually
       403:
         description: Forbidden - Requires admin roles
+
+/auth/changePassword:
+  put:
+    tags: [Authentication]
+    summary: Change Password
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [password, newPassword]
+            properties:
+              password: { type: string, format: password }
+              newPassword: { type: string, format: password }
+    responses:
+      200:
+        description: Password changed

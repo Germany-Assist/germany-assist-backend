@@ -22,7 +22,11 @@ export const loginUser = async (email) => {
     ],
   });
 };
-
+export const loginUserId = async (id) => {
+  return await db.User.findOne({
+    where: { id },
+  });
+};
 export const getUserById = async (id) => {
   const user = await db.User.findByPk(id, {
     attributes: { exclude: ["password"] },
@@ -126,7 +130,6 @@ export const getUserProfile = async (id) => {
   return { user, notifications };
 };
 
-//
 const userRepository = {
   getUserProfile,
   createUser,
@@ -138,6 +141,7 @@ const userRepository = {
   updateUser,
   userExists,
   getAllUsers,
+  loginUserId,
   getBusinessReps,
 };
 export default userRepository;

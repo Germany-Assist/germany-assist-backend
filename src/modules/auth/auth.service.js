@@ -161,6 +161,17 @@ export async function getUserProfile(id) {
   const sanitizedUser = await userMapper.sanitizeUser(user.toJSON());
   return { ...sanitizedUser, unReadNotifications: notifications };
 }
+export async function updatePassword({ userId, oldPassword, newPassword }) {
+  const user = await userRepository.loginUserId(userId);
+  const compare = bcryptUtil.hashCompare(oldPassword, user.password);
+  if (!compare)
+    throw new AppError(401, "wrong password", true, "invalid credentials");
+  const password = bcryptUtil.hashPassword(newPassword);
+  console.log(password);
+  user.update({ password });
+  await user.save();
+}
+
 const authServices = {
   sendVerificationEmail,
   googleAuth,
@@ -170,5 +181,6 @@ const authServices = {
   refreshUserToken,
   verifyUserManual,
   getUserProfile,
+  updatePassword,
 };
 export default authServices;

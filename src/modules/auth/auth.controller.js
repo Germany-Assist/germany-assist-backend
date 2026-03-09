@@ -86,6 +86,18 @@ export async function getUserProfile(req, res, next) {
     next(error);
   }
 }
+export async function updatePassword(req, res, next) {
+  try {
+    await authServices.updatePassword({
+      userId: req.auth.id,
+      oldPassword: req.body.password,
+      newPassword: req.body.newPassword,
+    });
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+}
 const authController = {
   googleAuthController,
   getUserProfile,
@@ -94,6 +106,7 @@ const authController = {
   loginToken,
   verifyUserManual,
   refreshUserToken,
+  updatePassword,
 };
 
 export default authController;
