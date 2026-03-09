@@ -98,6 +98,22 @@ export async function updatePassword(req, res, next) {
     next(error);
   }
 }
+export async function passwordReset(req, res, next) {
+  try {
+    await authServices.passwordReset(req.body.email);
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+}
+export async function passwordResetConfirm(req, res, next) {
+  try {
+    await authServices.passwordResetConfirm(req.body);
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+}
 const authController = {
   googleAuthController,
   getUserProfile,
@@ -107,6 +123,8 @@ const authController = {
   verifyUserManual,
   refreshUserToken,
   updatePassword,
+  passwordReset,
+  passwordResetConfirm,
 };
 
 export default authController;

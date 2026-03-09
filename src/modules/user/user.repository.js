@@ -27,7 +27,7 @@ export const loginUserId = async (id) => {
     where: { id },
   });
 };
-export const getUserById = async (id) => {
+export const getUserById = async (id, t) => {
   const user = await db.User.findByPk(id, {
     attributes: { exclude: ["password"] },
     include: [
@@ -35,6 +35,7 @@ export const getUserById = async (id) => {
       { model: db.Asset, as: "profilePicture", required: false },
     ],
     nest: false,
+    transaction: t,
   });
   if (!user)
     throw new AppError(401, "User not found", true, "invalid credentials");

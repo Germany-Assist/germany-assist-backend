@@ -2,11 +2,14 @@ import express from "express";
 import authController from "./auth.controller.js";
 import {
   loginValidators,
+  passwordResetConfirmValidators,
+  passwordResetValidators,
   updatePasswordValidators,
 } from "./auth.validators.js";
 import { validateExpress } from "../../middlewares/expressValidator.js";
 import jwtUtils from "../../middlewares/jwt.middleware.js";
 import authDomain from "./auth.domain.js";
+import { auth } from "google-auth-library";
 
 const authRouter = express.Router();
 
@@ -44,6 +47,15 @@ authRouter.put(
   updatePasswordValidators,
   validateExpress,
   authController.updatePassword,
+);
+
+authRouter.post("/password-reset", authController.passwordReset);
+
+authRouter.post(
+  "/password-reset/confirm",
+  passwordResetConfirmValidators,
+  validateExpress,
+  authController.passwordResetConfirm,
 );
 
 export default authRouter;

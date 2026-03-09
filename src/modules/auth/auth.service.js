@@ -2,7 +2,7 @@ import emailService from "../../services/email/email.service.js";
 import verificationEmailTemplate from "../../services/email/templates/verificationEmailTemplate.js";
 import crypto from "crypto";
 import { errorLogger } from "../../utils/loggers.js";
-import { APP_DOMAIN } from "../../configs/serverConfig.js";
+import { APP_DOMAIN, FRONTEND_URL } from "../../configs/serverConfig.js";
 import userMapper from "../user/user.mapper.js";
 import { AppError } from "../../utils/error.class.js";
 import userRepository from "../user/user.repository.js";
@@ -16,9 +16,11 @@ import { OAuth2Client } from "google-auth-library";
 import permissionServices from "../permission/permission.services.js";
 import { v4 as uuid } from "uuid";
 import { roleTemplates } from "../../database/templates.js";
+import passwordResetTemplate from "../../services/email/templates/passwordResetTemplate.js";
+import emailQueue from "../../jobs/queues/email.queue.js";
 const client = new OAuth2Client(googleOAuthConfig.clientId);
 
-const generateToken = () => crypto.randomBytes(32).toString("hex");
+const generateToken = (x = 32) => crypto.randomBytes(x).toString("hex");
 const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
@@ -76,7 +78,7 @@ export async function googleAuth(body) {
 
 export async function sendVerificationEmail(userEmail, userId, t) {
   try {
-    //TODO this was disabled till email server is added
+    //TODO this will be disabled till email server is added
     return;
     const token = generateToken();
     const tokenHash = hashToken(token);
@@ -100,6 +102,7 @@ export async function sendVerificationEmail(userEmail, userId, t) {
     });
   } catch (error) {
     errorLogger(error);
+    throw error;
   }
 }
 
@@ -107,7 +110,7 @@ export async function verifyAccount(token) {
   const t = await sequelize.transaction();
   try {
     const hashedToken = hashToken(token);
-    const dbToken = await authRepository.activateUser(hashedToken, t);
+    const dbToken = await authRepository.retrieveToken(hashedToken, t);
     if (!dbToken)
       throw new AppError(
         404,
@@ -115,6 +118,15 @@ export async function verifyAccount(token) {
         false,
         "failed to fine token",
       );
+    if (dbToken.type !== "emailVerification")
+      throw new AppError(
+        400,
+        "invalid token type",
+        false,
+        "invalid token type",
+      );
+    if (dbToken.token !== hashedToken)
+      throw new AppError(400, "token mismatch", false, "token mismatch");
     await userRepository.alterUserVerification(dbToken.userId, true, t);
     await t.commit();
     return true;
@@ -167,9 +179,74 @@ export async function updatePassword({ userId, oldPassword, newPassword }) {
   if (!compare)
     throw new AppError(401, "wrong password", true, "invalid credentials");
   const password = bcryptUtil.hashPassword(newPassword);
-  console.log(password);
   user.update({ password });
   await user.save();
+}
+export async function passwordReset(email) {
+  const t = await sequelize.transaction();
+  const user = await userRepository.getUserByEmail(email);
+  if (!user) throw new AppError(404, "User not found", true, "User not found");
+  const { id: userId, email: userEmail } = user;
+  try {
+    const token = generateToken(4);
+    const tokenHash = hashToken(token);
+    console.log("creation", token, tokenHash);
+    const databaseToken = {
+      token: tokenHash,
+      userId: userId,
+      oneTime: true,
+      isValid: true,
+      type: "passwordReset",
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    };
+    await authRepository.createToken(databaseToken, t);
+    const link = `${FRONTEND_URL}/auth/reset-password?token=${encodeURIComponent(
+      token,
+    )}`;
+    const html = passwordResetTemplate({ resetLink: link, token });
+    emailQueue.add("sendEmail", {
+      to: userEmail,
+      subject: "Password Reset Email",
+      html: html,
+    });
+    await t.commit();
+    return true;
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+}
+
+export async function passwordResetConfirm({ token, password }) {
+  const t = await sequelize.transaction();
+  try {
+    const hashedToken = hashToken(token);
+    const dbToken = await authRepository.retrieveToken(hashedToken, t);
+    if (!dbToken)
+      throw new AppError(
+        404,
+        "failed to fined token",
+        false,
+        "failed to fined token",
+      );
+    if (dbToken.type !== "passwordReset")
+      throw new AppError(
+        400,
+        "invalid token type",
+        false,
+        "invalid token type",
+      );
+    if (dbToken.token.trim() !== hashedToken)
+      throw new AppError(400, "token mismatch", false, "token mismatch");
+    const user = await userRepository.getUserById(dbToken.userId, t);
+    const passwordHash = bcryptUtil.hashPassword(password);
+    user.update({ password: passwordHash });
+    await user.save();
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
 }
 
 const authServices = {
@@ -182,5 +259,7 @@ const authServices = {
   verifyUserManual,
   getUserProfile,
   updatePassword,
+  passwordReset,
+  passwordResetConfirm,
 };
 export default authServices;

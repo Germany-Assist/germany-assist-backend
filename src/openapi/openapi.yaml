@@ -117,3 +117,7 @@ paths:
     $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1admin~1verify~1{id}"
   /auth/changePassword:
     $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1changePassword"
+  /auth/password-reset:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1password-reset"
+  /auth/password-reset/confirm:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1password-reset~1confirm"
