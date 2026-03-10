@@ -11,11 +11,17 @@ const isProduction = process.env.NODE_ENV === "production";
 export const sequelize = new Sequelize({
   database: DB_NAME,
   username: DB_USERNAME,
-  port: DB_PORT,
+  port: Number(DB_PORT),
   password: DB_PASSWORD,
   host: DB_HOST,
-  dialect: DB_DIALECT,
-  logging: false,
+  dialect: DB_DIALECT || "postgres",
+  logging: false, // or a custom logger
+  pool: {
+    max: 10,
+    min: 0,
+    acquire: 30000,
+    idle: 10000,
+  },
   dialectOptions: isProduction
     ? {
         ssl: {
@@ -23,8 +29,11 @@ export const sequelize = new Sequelize({
           rejectUnauthorized: false,
         },
       }
-    : {}, // No SSL for local
+    : {},
   define: {
     underscored: true,
+  },
+  retry: {
+    max: 3,
   },
 });
