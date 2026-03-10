@@ -18,6 +18,8 @@ import { v4 as uuid } from "uuid";
 import { roleTemplates } from "../../database/templates.js";
 import passwordResetTemplate from "../../services/email/templates/passwordResetTemplate.js";
 import emailQueue from "../../jobs/queues/email.queue.js";
+import db from "../../database/index.js";
+import { TOKENS_CONSTANTS } from "../../configs/constants.js";
 const client = new OAuth2Client(googleOAuthConfig.clientId);
 
 const generateToken = (x = 32) => crypto.randomBytes(x).toString("hex");
@@ -43,7 +45,6 @@ export async function googleAuth(body) {
           email: payload.email,
           firstName: payload.given_name || null,
           lastName: payload.family_name || null,
-          email: payload.email,
           profilePicture: {
             name: uuid(),
             mediaType: "image",
@@ -78,16 +79,20 @@ export async function googleAuth(body) {
 
 export async function sendVerificationEmail(userEmail, userId, t) {
   try {
-    //TODO this will be disabled till email server is added
-    return;
+    // return;
     const token = generateToken();
     const tokenHash = hashToken(token);
+    await authRepository.invalidateTokens(
+      userId,
+      TOKENS_CONSTANTS.EMAIL_VERIFICATION,
+      t,
+    );
     const databaseToken = {
       token: tokenHash,
       userId: userId,
       oneTime: true,
       isValid: true,
-      type: "emailVerification",
+      type: TOKENS_CONSTANTS.EMAIL_VERIFICATION, //"emailVerification",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     };
     await authRepository.createToken(databaseToken, t);
@@ -95,7 +100,7 @@ export async function sendVerificationEmail(userEmail, userId, t) {
       token,
     )}`;
     const html = verificationEmailTemplate(link);
-    await emailService.sendEmail({
+    await emailQueue.add("sendEmail", {
       to: userEmail,
       subject: "Verification Email",
       html,
@@ -106,7 +111,7 @@ export async function sendVerificationEmail(userEmail, userId, t) {
   }
 }
 
-export async function verifyAccount(token) {
+export async function verifyAccountConfirm(token) {
   const t = await sequelize.transaction();
   try {
     const hashedToken = hashToken(token);
@@ -118,16 +123,25 @@ export async function verifyAccount(token) {
         false,
         "failed to fine token",
       );
-    if (dbToken.type !== "emailVerification")
+    if (dbToken.type !== TOKENS_CONSTANTS.EMAIL_VERIFICATION)
       throw new AppError(
         400,
         "invalid token type",
         false,
         "invalid token type",
       );
-    if (dbToken.token !== hashedToken)
-      throw new AppError(400, "token mismatch", false, "token mismatch");
+    if (!dbToken.isValid)
+      throw new AppError(
+        400,
+        "token is not valid",
+        false,
+        "token is not valid",
+      );
+    if (dbToken.expiresAt < new Date())
+      throw new AppError(400, "token is expired", false, "token is expired");
     await userRepository.alterUserVerification(dbToken.userId, true, t);
+    dbToken.update({ isValid: false });
+    await dbToken.save();
     await t.commit();
     return true;
   } catch (error) {
@@ -184,19 +198,36 @@ export async function updatePassword({ userId, oldPassword, newPassword }) {
 }
 export async function passwordReset(email) {
   const t = await sequelize.transaction();
-  const user = await userRepository.getUserByEmail(email);
+  const user = await userRepository.getUserByEmail(email, t);
   if (!user) throw new AppError(404, "User not found", true, "User not found");
   const { id: userId, email: userEmail } = user;
+  const recentToken = await authRepository.findRecentToken(
+    userId,
+    TOKENS_CONSTANTS.PASSWORD_RESET,
+    180,
+  );
+
+  if (recentToken) {
+    throw new AppError(
+      429,
+      "Please wait before requesting another reset email",
+      true,
+    );
+  }
+  await authRepository.invalidateTokens(
+    userId,
+    TOKENS_CONSTANTS.PASSWORD_RESET,
+    t,
+  );
   try {
     const token = generateToken(4);
     const tokenHash = hashToken(token);
-    console.log("creation", token, tokenHash);
     const databaseToken = {
       token: tokenHash,
       userId: userId,
       oneTime: true,
       isValid: true,
-      type: "passwordReset",
+      type: TOKENS_CONSTANTS.PASSWORD_RESET,
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     };
     await authRepository.createToken(databaseToken, t);
@@ -204,7 +235,7 @@ export async function passwordReset(email) {
       token,
     )}`;
     const html = passwordResetTemplate({ resetLink: link, token });
-    emailQueue.add("sendEmail", {
+    await emailQueue.add("sendEmail", {
       to: userEmail,
       subject: "Password Reset Email",
       html: html,
@@ -224,24 +255,36 @@ export async function passwordResetConfirm({ token, password }) {
     const dbToken = await authRepository.retrieveToken(hashedToken, t);
     if (!dbToken)
       throw new AppError(
-        404,
+        403,
         "failed to fined token",
         false,
         "failed to fined token",
       );
-    if (dbToken.type !== "passwordReset")
+    if (dbToken.type !== TOKENS_CONSTANTS.PASSWORD_RESET)
       throw new AppError(
-        400,
+        403,
         "invalid token type",
         false,
         "invalid token type",
       );
-    if (dbToken.token.trim() !== hashedToken)
-      throw new AppError(400, "token mismatch", false, "token mismatch");
+
+    if (!dbToken.isValid)
+      throw new AppError(
+        403,
+        "token is not valid",
+        false,
+        "token is not valid",
+      );
+    if (dbToken.expiresAt < new Date())
+      throw new AppError(403, "token is expired", false, "token is expired");
     const user = await userRepository.getUserById(dbToken.userId, t);
+    if (!user)
+      throw new AppError(404, "User not found", true, "User not found");
     const passwordHash = bcryptUtil.hashPassword(password);
     user.update({ password: passwordHash });
+    dbToken.update({ isValid: false });
     await user.save();
+    await dbToken.save();
     await t.commit();
   } catch (error) {
     await t.rollback();
@@ -252,13 +295,13 @@ export async function passwordResetConfirm({ token, password }) {
 const authServices = {
   sendVerificationEmail,
   googleAuth,
-  verifyAccount,
   loginUser,
   loginToken,
   refreshUserToken,
   verifyUserManual,
   getUserProfile,
   updatePassword,
+  verifyAccountConfirm,
   passwordReset,
   passwordResetConfirm,
 };

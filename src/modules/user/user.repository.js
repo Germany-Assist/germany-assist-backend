@@ -44,20 +44,21 @@ export const getUserById = async (id, t) => {
 
 export const userExists = async (id) => {
   try {
-    let x = await userServices.getUserById(id);
+    let x = await getUserById(id);
     return true;
   } catch (error) {
     return false;
   }
 };
 
-const getUserByEmail = async (email) => {
+const getUserByEmail = async (email, t) => {
   return db.User.findOne({
     where: { email },
     include: [
       { model: db.UserRole },
       { model: db.Asset, as: "profilePicture", required: false },
     ],
+    transaction: t,
   });
 };
 
@@ -116,7 +117,7 @@ export const getUserProfile = async (id) => {
     user.UserRole.role === "service_provider_root" ||
     user.UserRole.role === "service_provider_rep"
   ) {
-    where.serviceProviderId === user.UserRole.role;
+    where.serviceProviderId = user.UserRole.relatedId;
   } else if (
     user.UserRole.role === "admin" ||
     user.UserRole.role === "super_admin"

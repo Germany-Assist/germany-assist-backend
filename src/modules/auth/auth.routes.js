@@ -49,7 +49,12 @@ authRouter.put(
   authController.updatePassword,
 );
 
-authRouter.post("/password-reset", authController.passwordReset);
+authRouter.post(
+  "/password-reset",
+  passwordResetValidators,
+  validateExpress,
+  authController.passwordReset,
+);
 
 authRouter.post(
   "/password-reset/confirm",
