@@ -1,14 +1,5 @@
 import hashIdUtil from "../../utils/hashId.util.js";
 
-function formatComment(comments) {
-  return comments.map((i) => {
-    return {
-      id: hashIdUtil.hashIdEncode(i.id),
-      body: i.body,
-      parentId: i.parentId ? hashIdUtil.hashIdEncode(i.parentId) : null,
-    };
-  });
-}
 async function formatPost(post) {
   let assets = [];
   if (post.Assets && post.Assets.length > 0) {
@@ -22,7 +13,7 @@ async function formatPost(post) {
     id: hashIdUtil.hashIdEncode(post.id),
     description: post.description,
     assets,
-    comments: post.Comments ? formatComment(post.Comments) : [],
+    commentsCount: post.commentsCount,
   };
 }
 

@@ -10,6 +10,7 @@ async function getTimelineForClient({
 }) {
   const where = {};
   if (pinned) where.isPinned = true;
+
   const timeline = await db.Timeline.findOne({
     attributes: ["id"],
     where: { id: timelineId },
@@ -24,11 +25,6 @@ async function getTimelineForClient({
           {
             model: db.Asset,
             attributes: ["url", "thumb", "key", "mediaType", "name"],
-          },
-          {
-            model: db.Comment,
-            attributes: ["id", "body", "parentId"],
-            limit: 3,
           },
         ],
         order: [["createdAt", "DESC"]],
@@ -45,6 +41,7 @@ async function getTimelineForClient({
       },
     ],
   });
+
   if (!timeline)
     throw new AppError(
       404,
@@ -52,7 +49,17 @@ async function getTimelineForClient({
       true,
       "failed to find the timeline in your orders",
     );
-  return timeline.toJSON();
+
+  const timelineJson = timeline.toJSON();
+
+  for (const post of timelineJson.Posts) {
+    const count = await db.Comment.count({
+      where: { postId: post.id },
+    });
+    post.commentsCount = count;
+  }
+
+  return timelineJson;
 }
 
 async function archiveTimeline(providerId, timelineId, status) {

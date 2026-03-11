@@ -16,8 +16,19 @@ async function createNewComment(req, res, next) {
     next(error);
   }
 }
-
+async function getPostComments(req, res, next) {
+  try {
+    const comments = await commentServices.getPostComments(
+      req.params.postId,
+      req.auth,
+    );
+    res.send(comments);
+  } catch (error) {
+    next(error);
+  }
+}
 const commentController = {
   createNewComment,
+  getPostComments,
 };
 export default commentController;
