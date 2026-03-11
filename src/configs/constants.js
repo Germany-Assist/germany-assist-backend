@@ -1,3 +1,5 @@
+import e from "express";
+
 export const STRIPE_EVENTS = {
   PAYMENT_SUCCESS: "payment_intent.succeeded",
   PAYMENT_CREATED: "payment_intent.created",
@@ -25,8 +27,19 @@ export const NOTIFICATION_EVENTS = {
     RAISED: "dispute.raised",
     UPDATED: "dispute.updated",
   },
+  ACCOUNT: {
+    PASSWORD_RESET: "account.password_reset",
+    PASSWORD_CHANGED: "account.password_changed",
+    EMAIL_CHANGED: "account.email_changed",
+    EMAIL_VERIFIED: "account.email_verified",
+    EMAIL_VERIFICATION_SENT: "account.email_verification_sent",
+  },
 };
 
+export const TOKENS_CONSTANTS = {
+  PASSWORD_RESET: "passwordReset",
+  EMAIL_VERIFICATION: "emailVerification",
+};
 export const AUDIT_LOGS_CONSTANTS = {
   ORDER_CREATE: "order.create",
   ORDER_UPDATE: "order.update",

@@ -9,7 +9,7 @@ export const createUserValidators = [
     .withMessage("First name must be between 2 and 50 characters")
     .matches(/^[a-zA-Z\s'-]+$/)
     .withMessage(
-      "First name can only contain letters, spaces, hyphens, and apostrophes"
+      "First name can only contain letters, spaces, hyphens, and apostrophes",
     ),
   body("lastName")
     .trim()
@@ -19,15 +19,16 @@ export const createUserValidators = [
     .withMessage("Last name must be between 2 and 50 characters")
     .matches(/^[a-zA-Z\s'-]+$/)
     .withMessage(
-      "Last name can only contain letters, spaces, hyphens, and apostrophes"
+      "Last name can only contain letters, spaces, hyphens, and apostrophes",
     ),
   body("email")
     .trim()
     .notEmpty()
     .withMessage("Email is required")
     .isEmail()
-    .withMessage("Invalid email format")
-    .normalizeEmail(),
+    .withMessage("Invalid email format"),
+  //TODO i disable email validation normalization to allow aliases for now
+  // .normalizeEmail(),
   body("password")
     .notEmpty()
     .withMessage("Password is required")
