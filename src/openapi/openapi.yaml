@@ -29,8 +29,10 @@ paths:
     $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1cancel"
   /notification:
     $ref: "../modules/notification/notification.swagger.yaml#/~1notification"
-  /notification/{id}:
-    $ref: "../modules/notification/notification.swagger.yaml#/~1notification~1{id}"
+  /notification/updateRead:
+    $ref: "../modules/notification/notification.swagger.yaml#/~1notification~1updateRead"
+  /notification/markAllAsRead:
+    $ref: "../modules/notification/notification.swagger.yaml#/~1notification~1markAllAsRead"
   /user:
     $ref: "../modules/user/user.swagger.yaml#/~1user"
   /user/admin:

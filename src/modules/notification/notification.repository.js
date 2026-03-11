@@ -10,16 +10,10 @@ export const getAll = async (limit = 10, offset = 0, filters) => {
   });
   return [rows, count];
 };
-/**
- * Updates the read status of a notification.
- *
- * @param {string} id - the id of the notification
- * @param {string} recipientId - the id of the recipient
- * @returns {Promise<void>} - a promise that resolves when the operation is complete
- */
-export const updateRead = async (filters) => {
+
+export const updateRead = async (filters, isRead = true) => {
   return await db.Notification.update(
-    { isRead: true },
+    { isRead },
     {
       where: filters,
     },
