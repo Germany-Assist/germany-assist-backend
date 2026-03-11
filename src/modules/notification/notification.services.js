@@ -74,7 +74,7 @@ export const updateRead = async ({
   const filters = buildRecipientFilters(recipientId, userType);
   const isRead = markAs === "read" ? true : false;
   if (all) {
-    return await notificationRepository.updateRead(filters, { isRead });
+    return await notificationRepository.updateRead(filters, isRead);
   }
   if (!notificationIds || notificationIds.length === 0) {
     throw new AppError(400, "notificationIds are required", true);
