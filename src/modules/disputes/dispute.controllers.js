@@ -11,6 +11,23 @@ export async function openDispute(req, res, next) {
     next(err);
   }
 }
+export async function providerResponse(req, res, next) {
+  try {
+    await authUtil.checkRoleAndPermission(req.auth, [
+      "service_provider_root",
+      "service_provider_rep",
+    ]);
+    const disputeId = hashIdUtil.hashIdDecode(req.params.id);
+    await disputeService.providerResponse({
+      body: req.body,
+      disputeId,
+      auth: req.auth,
+    });
+    res.status(201).json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function listDisputes(req, res, next) {
   try {
@@ -68,6 +85,7 @@ const disputeController = {
   listDisputes,
   markInReview,
   resolveDispute,
+  providerResponse,
   cancelDispute,
 };
 export default disputeController;

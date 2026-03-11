@@ -35,6 +35,19 @@ export async function openDispute(data, auth) {
   });
 }
 
+export async function providerResponse({ body, disputeId, auth }) {
+  const filters = {};
+  const { response } = body;
+  filters.serviceProviderId = auth.relatedId;
+  filters.id = disputeId;
+  const dispute = await disputeRepository.updateDispute(filters, {
+    providerResponse: response,
+  });
+  notificationQueue.add(NOTIFICATION_EVENTS.DISPUTE.UPDATED, {
+    disputeId: dispute.id,
+  });
+  return dispute;
+}
 export async function listDisputes(query, auth) {
   const role = auth.role;
   const filters = {
@@ -130,5 +143,6 @@ const disputeService = {
   listDisputes,
   openDispute,
   cancelDispute,
+  providerResponse,
 };
 export default disputeService;

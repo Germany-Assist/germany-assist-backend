@@ -18,7 +18,6 @@ export async function findAll({ page = 1, limit = 20, filters }) {
   if (filters.userId) where.userId = filters.userId;
   if (filters.serviceProviderId)
     where.serviceProviderId = filters.serviceProviderId;
-
   const { rows, count } = await db.Dispute.findAndCountAll({
     where,
     limit: Number(limit),

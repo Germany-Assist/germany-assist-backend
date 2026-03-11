@@ -36,6 +36,10 @@ Dispute.init(
       allowNull: false,
       defaultValue: "open",
     },
+    providerResponse: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     resolution: {
       type: DataTypes.ENUM("buyer_won", "provider_won", "cancelled"),
       allowNull: true,

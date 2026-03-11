@@ -27,6 +27,8 @@ paths:
     $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1resolve"
   /dispute/{id}/cancel:
     $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1cancel"
+  /dispute/provider/response/{id}:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1provider~1response~1{id}"
   /notification:
     $ref: "../modules/notification/notification.swagger.yaml#/~1notification"
   /notification/updateRead:
