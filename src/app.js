@@ -47,10 +47,6 @@ if (NODE_ENV !== "production") {
   );
   await setupSwagger(app);
 }
-
-app.use("/api", apiRouter);
-app.get("/health", (_, res) => res.sendStatus(200));
-
 app.use((req, res, next) => {
   res.on("finish", () => {
     if (req.files) req.files.length = 0;
@@ -58,6 +54,8 @@ app.use((req, res, next) => {
   });
   next();
 });
+app.use("/api", apiRouter);
+app.get("/health", (_, res) => res.sendStatus(200));
 
 app.use(() => {
   throw new AppError(404, "bad route", true, "bad route");

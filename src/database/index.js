@@ -134,7 +134,7 @@ export const defineConstrains = () => {
   User.hasMany(Asset, {
     foreignKey: "userId",
     as: "profilePicture",
-    scope: { key: "userImage", thumb: false },
+    scope: { key: "userImage", confirmed: true },
   });
   User.hasMany(Review, { foreignKey: "userId" });
   User.hasOne(UserRole, { foreignKey: "userId" });
@@ -210,9 +210,8 @@ export const defineConstrains = () => {
   });
   Asset.belongsTo(User, {
     foreignKey: "userId",
-    as: "profilePicture",
-    scope: { key: "userImage" },
   });
+
   Asset.belongsTo(Post, { foreignKey: "postId" });
   //assetTypes
   AssetTypes.hasMany(Asset, { foreignKey: "key", targetKey: "key" });

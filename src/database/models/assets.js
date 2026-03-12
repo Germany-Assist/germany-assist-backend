@@ -64,6 +64,11 @@ Asset.init(
         isInt: { msg: "PostId must be an integer" },
       },
     },
+    isLocal: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
     key: {
       type: DataTypes.STRING,
       allowNull: false,

@@ -94,3 +94,23 @@
               type: array
               items:
                 $ref: "../../openapi/components/schemas.yaml#/UserResponse"
+
+/user/profile/image:
+  post:
+    tags: [Profile Management]
+    summary: Set Profile Image
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              image:
+                type: string
+                format: binary
+    responses:
+      200:
+        description: Profile image updated

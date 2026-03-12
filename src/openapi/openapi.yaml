@@ -45,6 +45,8 @@ paths:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1root~1rep"
   /user/admin/all:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1admin~1all"
+  /user/profile/image:
+    $ref: "../modules/user/user.swagger.yaml#/~1user~1profile~1image"
   /post/comment:
     $ref: "../modules/comment/comment.swagger.yaml#/~1comment"
   /dashboard/provider/finance:
