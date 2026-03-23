@@ -30,6 +30,9 @@ export async function stripeProcessor(job) {
         }
         case STRIPE_EVENTS.PAYMENT_SUCCESS: {
           const pi = event.data.object;
+          if (!metadata) {
+            throw new Error(`Missing metadata for Stripe event: ${event.id}`);
+          }
           const orderData = {
             amount: pi.amount,
             status: "active",
@@ -68,7 +71,9 @@ export async function stripeProcessor(job) {
       const processingTime = Date.now() - startTime;
       infoLogger(`Job ${job.id} completed in ${processingTime}ms`);
     } catch (err) {
-      await t.rollback();
+      if (t && !t.finished) {
+        await t.rollback();
+      }
       errorLogger(err);
       throw err;
     }

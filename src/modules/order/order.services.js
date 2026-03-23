@@ -57,7 +57,7 @@ export async function payOrder(req) {
       stripePaymentIntentId: uuidv4(),
       currency: "usd",
     };
-    await orderRepository.createOrder(orderData, t);
+    const order = await orderRepository.createOrder(orderData, t);
     const logData = {
       orderId: order.id,
       action: AUDIT_LOGS_CONSTANTS.ORDER_CREATE,

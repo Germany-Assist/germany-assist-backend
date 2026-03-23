@@ -45,15 +45,17 @@ winston.loggers.add("errorLogger", {
 
       if (stack) logString += `\n${stack}`;
       return logString;
-    })
+    }),
   ),
   transports: [
     NODE_ENV === "dev"
       ? new winston.transports.Console()
       : new winston.transports.Console({
+          level: "error",
+          stderrLevels: ["error"],
           format: winston.format.printf(
             ({ timestamp }) =>
-              `${timestamp} error occurred please check the logs`
+              `${timestamp} error occurred please check the logs`,
           ),
         }),
     new DailyRotateFile({
@@ -72,7 +74,7 @@ winston.loggers.add("httpLogger", {
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
     winston.format.printf(({ timestamp, level, message, LogMetaData }) => {
       return `${timestamp} ${level}: ${LogMetaData || ""} ${message}`;
-    })
+    }),
   ),
   transports: [
     new winston.transports.Console(),
@@ -92,7 +94,7 @@ winston.loggers.add("debugLogger", {
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
     winston.format.printf(({ timestamp, level, message }) => {
       return `${timestamp} ${level}: ${message}`;
-    })
+    }),
   ),
   transports: [
     new winston.transports.Console(),
@@ -112,7 +114,7 @@ export const infoLogger = winston.loggers.get("debugLogger").info;
 export const httpLogger = winston.loggers.get("httpLogger").http;
 export const rawErrorLogger = winston.loggers.get("errorLogger").error;
 
-export const errorLogger = (error) => {
-  rawErrorLogger(error);
-  captureError(error);
+export const errorLogger = (error, ...args) => {
+  rawErrorLogger(error, ...args);
+  captureError(error, { extraArgs: args });
 };

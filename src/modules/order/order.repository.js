@@ -96,7 +96,6 @@ export async function getServiceForPayment({ serviceId, optionId, type }) {
 
 export async function createOrder(data, t) {
   return await db.Order.create(data, {
-    raw: true,
     transaction: t,
   });
 }
