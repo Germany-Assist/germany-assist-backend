@@ -6,14 +6,15 @@ import { shutdownCron } from "../cron/index.js";
 import { AppError } from "../utils/error.class.js";
 
 let isShuttingDown = false;
-const shutdownTimeout = setTimeout(() => {
-  console.error("Forced shutdown after timeout");
-  process.exit(1);
-}, 120000); // 15s max
 
 export async function shutdown(event, server, io, error) {
   if (isShuttingDown) return;
   isShuttingDown = true;
+
+  const shutdownTimeout = setTimeout(() => {
+    console.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 120000);
 
   infoLogger(`Shutdown initiated: ${event}`);
   if (event === "SIGINT" || event === "SIGTERM") {
@@ -62,9 +63,7 @@ export async function shutdown(event, server, io, error) {
     await disconnectRedis();
 
     infoLogger("Shutdown complete");
-
     clearTimeout(shutdownTimeout);
-
     setImmediate(() => process.exit(0));
   } catch (err) {
     errorLogger("Shutdown failed", err);
