@@ -10,7 +10,9 @@ import { createServiceValidator } from "./services.validators.js";
 import timelineRouter from "../timeline/timeline.routes.js";
 import variantRouter from "../variant/variant.routes.js";
 import multerUpload from "../../configs/multer.config.js";
+
 const serviceRouter = express.Router();
+
 serviceRouter.use("/timeline", timelineRouter);
 serviceRouter.use("/variant", variantRouter);
 

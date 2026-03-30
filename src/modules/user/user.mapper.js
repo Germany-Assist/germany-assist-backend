@@ -39,10 +39,10 @@ const sanitizeUser = async (user) => {
   }
 
   if (user.profilePicture && user.profilePicture.length > 0) {
-    if (user.googleId) {
-      signedImage = user?.profilePicture[0]?.url;
-    } else {
+    if (user.profilePicture[0]?.isLocal) {
       signedImage = await generateDownloadUrl(user?.profilePicture[0]?.url);
+    } else {
+      signedImage = user?.profilePicture[0]?.url;
     }
     imageKey = user?.profilePicture[0]?.name;
   }

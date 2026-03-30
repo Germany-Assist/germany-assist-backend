@@ -18,14 +18,16 @@ class AssetService {
   /**
    * Upload files
    * @param {Object} options
-   * @param {string} options.type - asset type
+   * @param {string} options.type - asset type - type should fall in one of the many options provided in the constraints (asset-types)table
    * @param {Array} options.files - array of files { buffer, originalname, mimetype }
    * @param {Object} options.auth - authenticated user info
-   * @param {Object} options.params - additional params (postId, serviceId)
+   * @param {Object} options.params - additional params (postId, serviceId) in case of profile image etc - its useless
    * @param {Object} options.transaction - optional DB transaction
-   * @returns array of uploaded files with signed URLs
+   * @returns array of uploaded files with signed URLs for display
    */
+
   static async upload({ type, files, auth, params, transaction }) {
+    if (!transaction) throw new AppError(400, "Transaction is required");
     if (!files || files.length === 0) {
       throw new AppError(400, "No files provided");
     }
@@ -40,9 +42,14 @@ class AssetService {
       params,
       constraints,
     );
-
     // 3️⃣ Validate files against count & size
-    await this.validateFiles(type, files, searchFilters, constraints);
+    await this.validateFiles(
+      type,
+      files,
+      searchFilters,
+      constraints,
+      transaction,
+    );
 
     // 4️⃣ Format files depending on media type
     let filesToUpload;
@@ -115,9 +122,18 @@ class AssetService {
   }
 
   // Validate file sizes and upload limits
-  static async validateFiles(type, files, searchFilters, constraints) {
+  static async validateFiles(
+    type,
+    files,
+    searchFilters,
+    constraints,
+    transaction,
+  ) {
     const totalFiles = files.length;
-    const currentCount = await AssetRepository.countAssets(searchFilters);
+    const currentCount = await AssetRepository.countAssets(
+      searchFilters,
+      transaction,
+    );
     if (
       constraints.limit !== "*" &&
       currentCount + totalFiles > constraints.limit

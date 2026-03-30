@@ -48,8 +48,10 @@ export async function googleAuth(body) {
           profilePicture: {
             name: uuid(),
             mediaType: "image",
+            isLocal: false,
             url: payload.picture,
             size: 0,
+            confirmed: true,
           },
           isVerified: true,
           googleId: payload.sub,
