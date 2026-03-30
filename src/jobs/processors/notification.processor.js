@@ -14,12 +14,10 @@ async function notificationProcessor(job) {
   try {
     await handler(data);
   } catch (error) {
-    errorLogger({
+    errorLogger(error, {
       jobId: id,
       eventName: name,
       userId: data?.userId,
-      error,
-      stack: error.stack,
     });
     throw error;
   }

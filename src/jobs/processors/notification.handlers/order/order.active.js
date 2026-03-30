@@ -26,9 +26,9 @@ async function handleOrderActive(data) {
     }),
   ]);
 
-  if (!user || !service) {
+  if (!user || !service || !service.ServiceProvider) {
     throw new AppError(
-      `User or Service not found: userId=${userId}, serviceId=${serviceId}`,
+      `User, Service or ServiceProvider not found: userId=${userId}, serviceId=${serviceId}`,
     );
   }
 
@@ -98,19 +98,20 @@ async function handleOrderActive(data) {
     });
 
     // Queue emails in parallel
-    emailQueue.add("sendEmail", {
-      to: service.ServiceProvider?.email,
-      subject: "Successful Purchase from Germany-Assist",
-      html,
-    });
-    emailQueue.add("sendEmail", {
-      to: user.email,
-      subject: "Successful Purchase from Germany-Assist",
-      html,
-    });
-
+    await Promise.all([
+      emailQueue.add("sendEmail", {
+        to: service.ServiceProvider?.email,
+        subject: "Successful Purchase from Germany-Assist",
+        html,
+      }),
+      emailQueue.add("sendEmail", {
+        to: user.email,
+        subject: "Successful Purchase from Germany-Assist",
+        html,
+      }),
+    ]);
   } catch (externalError) {
-    if (!transaction.finished) {
+    if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
     errorLogger("Failed handling order active:", externalError);

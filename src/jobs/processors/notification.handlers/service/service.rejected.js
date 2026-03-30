@@ -19,8 +19,8 @@ async function handleServiceRejection({ serviceId, reason }) {
     ],
   });
 
-  if (!service) {
-    throw new Error(`Service ${serviceId} not found`);
+  if (!service || !service.ServiceProvider) {
+    throw new Error(`Service ${serviceId} or its ServiceProvider not found`);
   }
 
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
@@ -85,7 +85,7 @@ async function handleServiceRejection({ serviceId, reason }) {
     });
 
     // Queue email
-    emailQueue.add("sendEmail", {
+    await emailQueue.add("sendEmail", {
       to: service.ServiceProvider.email,
       subject: "Service Rejected - Germany Assist",
       html: providerEmailHtml,
@@ -93,7 +93,7 @@ async function handleServiceRejection({ serviceId, reason }) {
 
     return { success: true };
   } catch (error) {
-    if (!transaction.finished) {
+    if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
     errorLogger("Failed handling service rejection:", error);

@@ -7,17 +7,24 @@ import { errorLogger } from "../../../../utils/loggers.js";
 import { sequelize } from "../../../../configs/database.js";
 import emailQueue from "../../../../jobs/queues/email.queue.js";
 
-//only on creation
+const EMAIL_SUBJECT = "Dispute Raised - Germany Assist";
+
+// only on creation
 export default async function handleDisputeRaised({ disputeId }) {
   const transaction = await sequelize.transaction();
 
   try {
+    // ✅ Fetch inside transaction
     const dispute = await db.Dispute.findOne({
       where: { id: disputeId },
+      transaction,
       include: [
         { model: db.Order, attributes: ["id"] },
-        { model: db.User, attributes: ["id", "email"] },
-        { model: db.ServiceProvider, attributes: ["id", "email", "name"] },
+        { model: db.User, attributes: ["id", "email", "name"] },
+        {
+          model: db.ServiceProvider,
+          attributes: ["id", "email", "name"],
+        },
       ],
     });
 
@@ -25,20 +32,27 @@ export default async function handleDisputeRaised({ disputeId }) {
       throw new AppError(404, `Dispute ${disputeId} not found`, true);
     }
 
-    const hashedDisputeId = hashIdUtil.hashIdEncode(disputeId);
+    // ✅ Safety checks
+    if (!dispute.Order || !dispute.User || !dispute.ServiceProvider) {
+      throw new AppError(500, "Dispute relations missing", true);
+    }
+
+    const hashedDisputeId = hashIdUtil.hashIdEncode(dispute.id);
     const hashedOrderId = hashIdUtil.hashIdEncode(dispute.Order.id);
+
     const message = `A new dispute ${hashedDisputeId} was raised for order "${hashedOrderId}".`;
 
+    // ✅ Emails
     const userEmailHtml = disputeEmail({
-      title: `Dispute Raised`,
-      recipientName: dispute.User.email,
+      title: "Dispute Raised",
+      recipientName: dispute.User.name || dispute.User.email,
       message,
       orderId: hashedOrderId,
       disputeId: hashedDisputeId,
     });
 
     const providerEmailHtml = disputeEmail({
-      title: `Dispute Raised`,
+      title: "Dispute Raised",
       recipientName:
         dispute.ServiceProvider.name || dispute.ServiceProvider.email,
       message,
@@ -46,47 +60,37 @@ export default async function handleDisputeRaised({ disputeId }) {
       disputeId: hashedDisputeId,
     });
 
-    const providerNotification = await db.Notification.create(
-      {
-        message,
-        url: "",
-        type: "info",
-        serviceProviderId: dispute.ServiceProvider.id,
-        metadata: {
-          disputeId: dispute.id,
-        },
-      },
-      { transaction },
-    );
+    // ✅ DRY notification creator
+    const createNotification = (data) =>
+      db.Notification.create(data, { transaction });
 
-    const adminNotification = await db.Notification.create(
-      {
-        message,
-        url: "",
-        type: "info",
-        isAdmin: true,
-        metadata: {
-          disputeId: dispute.id,
-        },
-      },
-      { transaction },
-    );
+    const baseNotification = {
+      message,
+      url: "", // consider adding frontend link
+      type: "info",
+      metadata: { disputeId: dispute.id },
+    };
 
-    const userNotification = await db.Notification.create(
-      {
-        message,
-        url: "",
-        type: "info",
-        userId: dispute.User.id,
-        metadata: {
-          disputeId: dispute.id,
-        },
-      },
-      { transaction },
-    );
+    const [providerNotification, adminNotification, userNotification] =
+      await Promise.all([
+        createNotification({
+          ...baseNotification,
+          serviceProviderId: dispute.ServiceProvider.id,
+        }),
+        createNotification({
+          ...baseNotification,
+          isAdmin: true,
+        }),
+        createNotification({
+          ...baseNotification,
+          userId: dispute.User.id,
+        }),
+      ]);
 
+    // ✅ Commit before side effects
     await transaction.commit();
 
+    // ✅ Socket notifications
     socketNotificationServices.sendSocketNotificationToProvider(
       dispute.ServiceProvider.id,
       {
@@ -105,25 +109,31 @@ export default async function handleDisputeRaised({ disputeId }) {
       message,
     });
 
-    // Queue emails
-    emailQueue.add("sendEmail", {
-      to: dispute.ServiceProvider.email,
-      subject: "Dispute Raised - Germany Assist",
-      html: providerEmailHtml,
-    });
-    emailQueue.add("sendEmail", {
-      to: dispute.User.email,
-      subject: "Dispute Raised - Germany Assist",
-      html: userEmailHtml,
-    });
+    // ✅ Queue emails (async, non-blocking)
+    await Promise.all([
+      emailQueue.add("sendEmail", {
+        to: dispute.ServiceProvider.email,
+        subject: EMAIL_SUBJECT,
+        html: providerEmailHtml,
+      }),
+      emailQueue.add("sendEmail", {
+        to: dispute.User.email,
+        subject: EMAIL_SUBJECT,
+        html: userEmailHtml,
+      }),
+    ]);
 
+    return { success: true };
   } catch (error) {
-    if (!transaction.finished) {
-      await transaction.rollback();
+    try {
+      if (transaction && !transaction.finished) {
+        await transaction.rollback();
+      }
+    } catch (rollbackError) {
+      errorLogger("Rollback failed:", rollbackError);
     }
+
     errorLogger("Failed handling dispute raised:", error);
     throw error;
   }
-
-  return { success: true };
 }

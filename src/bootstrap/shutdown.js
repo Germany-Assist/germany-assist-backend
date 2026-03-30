@@ -3,15 +3,28 @@ import { disconnectRedis } from "../configs/redis.js";
 import { QueueManager } from "../configs/bullMQ.config.js";
 import { infoLogger, errorLogger } from "../utils/loggers.js";
 import { shutdownCron } from "../cron/index.js";
+import { AppError } from "../utils/error.class.js";
 
 let isShuttingDown = false;
 
-export async function shutdown(event, server, io) {
+export async function shutdown(event, server, io, error) {
   if (isShuttingDown) return;
   isShuttingDown = true;
 
-  infoLogger(`Shutdown initiated: ${event}`);
+  const shutdownTimeout = setTimeout(() => {
+    console.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 120000);
 
+  infoLogger(`Shutdown initiated: ${event}`);
+  if (event === "SIGINT" || event === "SIGTERM") {
+    infoLogger("Received shutdown signal");
+  }
+
+  const errorToLog = error || (event instanceof Error ? event : null);
+  if (errorToLog) {
+    errorLogger(errorToLog);
+  }
   try {
     // 1 Stop cron first
     await shutdownCron();
@@ -50,7 +63,8 @@ export async function shutdown(event, server, io) {
     await disconnectRedis();
 
     infoLogger("Shutdown complete");
-    process.exit(0);
+    clearTimeout(shutdownTimeout);
+    setImmediate(() => process.exit(0));
   } catch (err) {
     errorLogger("Shutdown failed", err);
     process.exit(1);
