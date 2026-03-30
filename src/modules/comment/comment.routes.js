@@ -11,7 +11,11 @@ commentRouter.post(
   jwtUtils.authenticateJwt,
   commentValidator,
   validateExpress,
-  commentController.createNewComment
+  commentController.createNewComment,
 );
-
+commentRouter.get(
+  "/getPostComments/:postId",
+  jwtUtils.authenticateJwt,
+  commentController.getPostComments,
+);
 export default commentRouter;

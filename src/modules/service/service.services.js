@@ -6,6 +6,8 @@ import serviceMappers from "./service.mappers.js";
 import hashIdUtil from "../../utils/hashId.util.js";
 import AssetService from "../../services/assts.services.js";
 import serviceProviderRepository from "../serviceProvider/serviceProvider.repository .js";
+import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
+import notificationQueue from "../../jobs/queues/notification.queue.js";
 const publicAttributes = [
   "id",
   "title",
@@ -85,6 +87,9 @@ async function createService(req, transaction) {
       transaction,
     });
   }
+  notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.CREATED, {
+    serviceId: service.id,
+  });
   return service;
 }
 
@@ -329,10 +334,27 @@ async function alterServiceStatus(id, status) {
   } else {
     throw new AppError(400, "failed to process request", false);
   }
-  return await service.save();
+  await service.save();
+
+  switch (status) {
+    case "approve":
+      notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.APPROVED, {
+        serviceId: id,
+      });
+      break;
+    case "reject":
+      notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.REJECTED, {
+        serviceId: id,
+      });
+      break;
+    default:
+      break;
+  }
+  return;
 }
 async function alterServiceStatusSP(id, status) {
   const service = await db.Service.findByPk(id);
+  const notificationStatus = status === "publish" ? "PUBLISHED" : "UNPUBLISHED";
   if (!service) throw new AppError(400, "failed to find service", false);
   if (status === "publish") {
     service.published = true;
@@ -341,6 +363,9 @@ async function alterServiceStatusSP(id, status) {
   } else {
     throw new AppError(400, "failed to process request", false);
   }
+  notificationQueue.add(NOTIFICATION_EVENTS.SERVICE[notificationStatus], {
+    serviceId: service.id,
+  });
   return await service.save();
 }
 export const updateServiceRating = async (

@@ -1,0 +1,460 @@
+/dispute/create:
+  post:
+    tags: [Disputes]
+    summary: Open a dispute
+    description: >
+      Allows an authenticated client to raise a dispute for an order.
+      The order must exist, belong to the authenticated user (buyer),
+      and be in either `active` or `pending_completion` status.
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - orderId
+              - reason
+              - description
+            properties:
+              orderId:
+                type: string
+                description: The encoded order ID
+                example: "ord_654321"
+              reason:
+                type: string
+                description: Reason for raising the dispute
+                enum:
+                  [service_not_delivered, poor_quality, late_delivery, other]
+                example: service_not_delivered
+              description:
+                type: string
+                description: Detailed explanation of the dispute
+                example: "The provider did not deliver the agreed work within the deadline."
+    responses:
+      201:
+        description: Dispute successfully created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+      400:
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Validation error
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+      403:
+        description: Forbidden (invalid buyer or missing client role)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: invalid buyer
+      404:
+        description: Order not found or invalid action
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: invalid order
+
+/dispute:
+  get:
+    tags: [Disputes]
+    summary: Get disputes for current user (role-aware)
+    description: "Returns a list of disputes. The results depend on the authenticated user's role: client, service provider, or admin."
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+        description: Page number for pagination
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 10
+        description: Number of disputes per page
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter disputes by status
+      - in: query
+        name: orderId
+        schema:
+          type: string
+        description: Filter by order ID (encoded)
+      - in: query
+        name: userId
+        schema:
+          type: string
+        description: Filter by user ID (admin or provider only)
+      - in: query
+        name: serviceProviderId
+        schema:
+          type: string
+        description: Filter by service provider ID (admin only)
+      - in: query
+        name: resolution
+        schema:
+          type: string
+        description: Filter by dispute resolution
+    responses:
+      200:
+        description: Disputes list
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                meta:
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                    page:
+                      type: integer
+                    limit:
+                      type: integer
+                    pages:
+                      type: integer
+                data:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "dsp_123456"
+                      status:
+                        type: string
+                        example: "pending"
+                      orderId:
+                        type: string
+                        example: "ord_654321"
+                      userId:
+                        type: string
+                        example: "usr_987654"
+                      serviceProviderId:
+                        type: string
+                        example: "sp_111222"
+                      resolution:
+                        type: string
+                        example: "unresolved"
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+      403:
+        description: Forbidden (invalid role or missing permissions)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Forbidden
+
+/dispute/provider/response/{id}:
+  post:
+    tags: [Disputes]
+    summary: Respond to a dispute
+    description: >
+      Only accessible by service providers.
+      Sends a response to the specified dispute.
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: The encoded dispute ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              response:
+                type: string
+                description: The response to the dispute
+                example: "I dont agree with your claim."
+    responses:
+      200:
+        description: Dispute response successfully sent
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+/dispute/{id}/in-review:
+  patch:
+    tags: [Disputes]
+    summary: Mark a dispute as "in review"
+    description: Only accessible by admin or super_admin. Marks the specified dispute as under review.
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: The encoded dispute ID to mark as in review
+    responses:
+      200:
+        description: Dispute successfully marked as in review
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+      401:
+        description: Unauthorized (user not authenticated)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+      403:
+        description: Forbidden (user lacks admin permissions)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Forbidden
+      404:
+        description: Dispute not found
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Dispute not found
+
+/dispute/{id}/resolve:
+  patch:
+    tags: [Disputes]
+    summary: Resolve a dispute
+    description: >
+      Only accessible by admin or super_admin. Sets the dispute resolution and updates the status accordingly. 
+      Updates related order flow based on the resolution.
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: The encoded dispute ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              resolution:
+                type: string
+                description: The resolution decision
+                enum: [buyer_won, provider_won, partial, cancelled]
+                example: buyer_won
+    responses:
+      200:
+        description: Dispute successfully resolved
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                data:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    status:
+                      type: string
+                    resolution:
+                      type: string
+                    orderId:
+                      type: string
+                    updatedAt:
+                      type: string
+                      format: date-time
+      400:
+        description: Invalid resolution
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Invalid resolution
+      401:
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+      403:
+        description: Forbidden (user not admin)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Forbidden
+      404:
+        description: Dispute not found
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Dispute not found
+
+/dispute/{id}/cancel:
+  patch:
+    tags: [Disputes]
+    summary: Cancel a dispute
+    description: >
+      Allows a client to cancel their own dispute.
+      The dispute must belong to the authenticated client.
+      The dispute status will be updated to `cancelled`.
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: The encoded dispute ID to cancel
+    responses:
+      200:
+        description: Dispute successfully cancelled
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: Dispute Cancelled
+      401:
+        description: Unauthorized (user not authenticated)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Unauthorized
+      403:
+        description: Forbidden (user is not a client or does not own the dispute)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Forbidden
+      404:
+        description: Dispute not found
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Dispute not found

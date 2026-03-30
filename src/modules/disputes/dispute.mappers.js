@@ -1,13 +1,18 @@
+import hashIdUtil from "../../utils/hashId.util.js";
+import { providerResponse } from "./dispute.services.js";
+
 export function toResponse(dispute) {
   return {
-    id: dispute.id,
-    orderId: dispute.orderId,
-    openedBy: dispute.openedBy,
+    id: hashIdUtil.hashIdEncode(dispute.id),
+    userId: hashIdUtil.hashIdEncode(dispute.userId),
+    serviceProviderId: dispute.serviceProviderId,
+    orderId: hashIdUtil.hashIdEncode(dispute.orderId),
+    providerResponse: dispute.providerResponse,
+    status: dispute.status,
+    createdAt: dispute.createdAt,
     reason: dispute.reason,
     description: dispute.description,
-    status: dispute.status,
     resolution: dispute.resolution,
     resolvedAt: dispute.resolvedAt,
-    createdAt: dispute.createdAt,
   };
 }

@@ -1,9 +1,11 @@
 import { sequelize } from "../../configs/database.js";
 import { roleTemplates } from "../../database/templates.js";
 import jwtUtils from "../../middlewares/jwt.middleware.js";
+import AssetService from "../../services/assts.services.js";
 import authUtil from "../../utils/authorize.util.js";
 import bcryptUtil from "../../utils/bcrypt.util.js";
 import { AppError } from "../../utils/error.class.js";
+import AssetRepository from "../assets/assets.repository.js";
 import authServices from "../auth/auth.service.js";
 import permissionServices from "../permission/permission.services.js";
 import userDomain from "./user.domain.js";
@@ -163,8 +165,38 @@ export async function getReps(auth) {
   });
   return await Promise.all(sanitizedUsers);
 }
+export const updateImage = async (auth, file) => {
+  // 1.first i accept the image from the user
+  // 2.i need to mark the current image as unconfirmed in the assets
+  // 3.i need to save the new image and receive the url from the s3 service and the upload service
+  // 4.i need to update the image in the database which will happen automatically in the upload service
+  const t = await sequelize.transaction();
+  try {
+    const profileImageIds = await AssetRepository.findProfileImageId(
+      auth.id,
+      t,
+    );
+    if (profileImageIds) {
+      await AssetRepository.markAsUnconfirmed(profileImageIds, t);
+    }
+    await AssetService.upload({
+      type: "userImage",
+      files: [file],
+      auth,
+      params: { id: auth.id },
+      transaction: t,
+    });
+    await t.commit();
+  } catch (error) {
+    console.log(error);
+    await t.rollback();
+  }
+
+  // console.log(file);
+};
 
 const userServices = {
+  updateImage,
   registerClient,
   registerRep,
   registerAdmin,

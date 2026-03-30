@@ -6,7 +6,6 @@ import authDomain from "./auth.domain.js";
 import { sequelize } from "../../configs/database.js";
 
 async function googleAuthController(req, res, next) {
-  const t = await sequelize.transaction();
   try {
     const result = await authServices.googleAuth(req.body);
     const { refreshToken, accessToken, user, status } = result;
@@ -14,9 +13,7 @@ async function googleAuthController(req, res, next) {
       .cookie("refreshToken", refreshToken, authDomain.cookieOptions)
       .status(status)
       .json({ accessToken, user });
-    await t.commit();
   } catch (error) {
-    await t.rollback();
     next(error);
   }
 }
@@ -24,7 +21,7 @@ async function googleAuthController(req, res, next) {
 export async function verifyAccount(req, res, next) {
   try {
     const token = req.query.token;
-    const success = await authServices.verifyAccount(token);
+    const success = await authServices.verifyAccountConfirm(token);
     if (!success) return res.redirect(`${FRONTEND_URL}/verified?status=error`);
     res.redirect(`${FRONTEND_URL}/verified?status=success`);
   } catch (error) {
@@ -86,6 +83,34 @@ export async function getUserProfile(req, res, next) {
     next(error);
   }
 }
+export async function updatePassword(req, res, next) {
+  try {
+    await authServices.updatePassword({
+      userId: req.auth.id,
+      oldPassword: req.body.password,
+      newPassword: req.body.newPassword,
+    });
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+}
+export async function passwordReset(req, res, next) {
+  try {
+    await authServices.passwordReset(req.body.email);
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+}
+export async function passwordResetConfirm(req, res, next) {
+  try {
+    await authServices.passwordResetConfirm(req.body);
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+}
 const authController = {
   googleAuthController,
   getUserProfile,
@@ -94,6 +119,9 @@ const authController = {
   loginToken,
   verifyUserManual,
   refreshUserToken,
+  updatePassword,
+  passwordReset,
+  passwordResetConfirm,
 };
 
 export default authController;

@@ -1,0 +1,159 @@
+/notification:
+  get:
+    tags: [Notification]
+    summary: Fetching all notifications with pagination
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          example: 1
+        required: false
+        description: Page number
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          example: 10
+        required: false
+        description: Number of items per page
+      - in: query
+        name: isRead
+        schema:
+          type: string
+          enum: [true, false, all]
+        required: false
+        description: Filter by read status
+      - in: query
+        name: isAdmin
+        schema:
+          type: boolean
+          example: true
+        required: false
+        description: Filter by admin to get only admin notifications
+    responses:
+      "200":
+        description: Successful response
+        content:
+          application/json:
+            schema:
+              NotificationAllResponse:
+                type: object
+                properties:
+                  notification:
+                    type: array
+                    description: Array of notification objects
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "X2QA"
+                        type:
+                          type: string
+                          example: "info"
+                        message:
+                          type: string
+                          example: "You have a new order"
+                        createdAt:
+                          type: string
+                          format: date-time
+                  metadata:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 10
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                      totalPages:
+                        type: integer
+                        example: 1
+
+/notification/updateRead:
+  put:
+    tags:
+      - Notification
+    summary: Update notification read status
+    description: |
+      Mark specific notifications as read or unread.
+
+      - If `markAs` is not provided or undefined, notifications will be marked as `read` by default.
+      - Allowed values for `markAs` are `read` and `unread`.
+      - Sending any other value will result in a 422 Unprocessable Entity error.
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - notificationIds
+            properties:
+              notificationIds:
+                type: array
+                description: Array of hashed notification IDs
+                items:
+                  type: string
+                example:
+                  - "hashId1"
+                  - "hashId2"
+              markAs:
+                type: string
+                description: Status to mark notifications. Defaults to `read` if not provided.
+                enum:
+                  - read
+                  - unread
+                example: read
+    responses:
+      "200":
+        description: Notifications updated successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Notifications updated successfully
+      "422":
+        description: Invalid `markAs` value
+      "401":
+        description: Unauthorized
+      "404":
+        description: Notification not found
+
+/notification/markAllAsRead:
+  put:
+    tags:
+      - Notification
+    summary: Mark all notifications as read
+    description: Marks all unread notifications for the authenticated user as read.
+    security:
+      - bearerAuth: []
+    responses:
+      "200":
+        description: All notifications successfully marked as read
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: All notifications marked as read
+      "401":
+        description: Unauthorized
+      "500":
+        description: Internal server error

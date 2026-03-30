@@ -22,8 +22,12 @@ export const loginUser = async (email) => {
     ],
   });
 };
-
-export const getUserById = async (id) => {
+export const loginUserId = async (id) => {
+  return await db.User.findOne({
+    where: { id },
+  });
+};
+export const getUserById = async (id, t) => {
   const user = await db.User.findByPk(id, {
     attributes: { exclude: ["password"] },
     include: [
@@ -31,6 +35,7 @@ export const getUserById = async (id) => {
       { model: db.Asset, as: "profilePicture", required: false },
     ],
     nest: false,
+    transaction: t,
   });
   if (!user)
     throw new AppError(401, "User not found", true, "invalid credentials");
@@ -39,20 +44,21 @@ export const getUserById = async (id) => {
 
 export const userExists = async (id) => {
   try {
-    let x = await userServices.getUserById(id);
+    let x = await getUserById(id);
     return true;
   } catch (error) {
     return false;
   }
 };
 
-const getUserByEmail = async (email) => {
+const getUserByEmail = async (email, t) => {
   return db.User.findOne({
     where: { email },
     include: [
       { model: db.UserRole },
       { model: db.Asset, as: "profilePicture", required: false },
     ],
+    transaction: t,
   });
 };
 
@@ -105,10 +111,27 @@ export const getUserProfile = async (id) => {
       },
     ],
   });
-  return user;
+
+  const where = { isRead: false };
+  if (
+    user.UserRole.role === "service_provider_root" ||
+    user.UserRole.role === "service_provider_rep"
+  ) {
+    where.serviceProviderId = user.UserRole.relatedId;
+  } else if (
+    user.UserRole.role === "admin" ||
+    user.UserRole.role === "super_admin"
+  ) {
+    where.isAdmin = true;
+  } else {
+    where.userId = user.id;
+  }
+  const notifications = await db.Notification.count({
+    where,
+  });
+  return { user, notifications };
 };
 
-//
 const userRepository = {
   getUserProfile,
   createUser,
@@ -120,6 +143,7 @@ const userRepository = {
   updateUser,
   userExists,
   getAllUsers,
+  loginUserId,
   getBusinessReps,
 };
 export default userRepository;

@@ -17,6 +17,24 @@ components:
       bearerFormat: JWT
 
 paths:
+  /dispute:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute"
+  /dispute/create:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1create"
+  /dispute/{id}/in-review:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1in-review"
+  /dispute/{id}/resolve:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1resolve"
+  /dispute/{id}/cancel:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1{id}~1cancel"
+  /dispute/provider/response/{id}:
+    $ref: "../modules/disputes/dispute.swagger.yaml#/~1dispute~1provider~1response~1{id}"
+  /notification:
+    $ref: "../modules/notification/notification.swagger.yaml#/~1notification"
+  /notification/updateRead:
+    $ref: "../modules/notification/notification.swagger.yaml#/~1notification~1updateRead"
+  /notification/markAllAsRead:
+    $ref: "../modules/notification/notification.swagger.yaml#/~1notification~1markAllAsRead"
   /user:
     $ref: "../modules/user/user.swagger.yaml#/~1user"
   /user/admin:
@@ -27,6 +45,8 @@ paths:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1root~1rep"
   /user/admin/all:
     $ref: "../modules/user/user.swagger.yaml#/~1user~1admin~1all"
+  /user/profile/image:
+    $ref: "../modules/user/user.swagger.yaml#/~1user~1profile~1image"
   /post/comment:
     $ref: "../modules/comment/comment.swagger.yaml#/~1comment"
   /dashboard/provider/finance:
@@ -101,3 +121,9 @@ paths:
     $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1logout"
   /auth/admin/verify/{id}:
     $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1admin~1verify~1{id}"
+  /auth/changePassword:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1changePassword"
+  /auth/password-reset:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1password-reset"
+  /auth/password-reset/confirm:
+    $ref: "../modules/auth/auth.swagger.yaml#/~1auth~1password-reset~1confirm"

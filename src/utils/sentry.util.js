@@ -9,7 +9,16 @@ Sentry.init({
 
 export const captureError = (error, context = {}) => {
   if (!process.env.SENTRY_DSN) return;
-  Sentry.captureException(error, {
-    extra: context,
+
+  let exception = error;
+  let finalContext = context;
+
+  if (typeof error === "string" && context.extraArgs && context.extraArgs[0] instanceof Error) {
+    exception = context.extraArgs[0];
+    finalContext = { ...context, message: error };
+  }
+
+  Sentry.captureException(exception, {
+    extra: finalContext,
   });
 };

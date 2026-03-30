@@ -46,13 +46,13 @@ export const defineConstrains = () => {
   });
 
   Payout.belongsTo(Order, { foreignKey: "orderId" });
+
+  Order.belongsTo(ServiceProvider, { foreignKey: "serviceProviderId" });
   Order.hasOne(Payout, { foreignKey: "orderId" });
   //variants
 
   //token
   Token.belongsTo(User, { foreignKey: "userId" });
-  //notification
-  Notification.belongsTo(User, { foreignKey: "userId" });
 
   //comment
   Comment.belongsTo(Post, {
@@ -63,6 +63,11 @@ export const defineConstrains = () => {
     as: "parent",
     foreignKey: "parentId",
     constraints: true,
+  });
+  Comment.belongsTo(User, {
+    foreignKey: "userId",
+    constraints: true,
+    as: "user",
   });
   Comment.hasMany(Comment, {
     as: "replies",
@@ -120,6 +125,8 @@ export const defineConstrains = () => {
   });
 
   Dispute.belongsTo(Order, { foreignKey: "orderId" });
+  Dispute.belongsTo(ServiceProvider, { foreignKey: "serviceProviderId" });
+  Dispute.belongsTo(User, { foreignKey: "userId" });
   Order.hasOne(Dispute, { foreignKey: "orderId" });
   //user
   User.hasMany(Order, { foreignKey: "userId" });
@@ -127,11 +134,15 @@ export const defineConstrains = () => {
   User.hasMany(Asset, {
     foreignKey: "userId",
     as: "profilePicture",
-    scope: { key: "userImage", thumb: false },
+    scope: { key: "userImage", confirmed: true },
   });
   User.hasMany(Review, { foreignKey: "userId" });
   User.hasOne(UserRole, { foreignKey: "userId" });
   User.hasMany(Favorite, { foreignKey: "userId" });
+  User.hasMany(Dispute, { foreignKey: "userId" });
+  User.hasMany(Notification, { foreignKey: "userId" });
+  User.hasMany(Comment, { foreignKey: "userId", as: "comments" });
+
   User.belongsToMany(Permission, {
     through: UserPermission,
     as: "userToPermission",
@@ -140,7 +151,6 @@ export const defineConstrains = () => {
     onDelete: "cascade",
     unique: true,
   });
-  User.hasMany(Notification, { foreignKey: "userId" });
   User.hasMany(Token, { foreignKey: "userId" });
   //user Role
   UserRole.belongsTo(User, { foreignKey: "userId" });
@@ -165,7 +175,6 @@ export const defineConstrains = () => {
   });
   Service.hasMany(Review, { foreignKey: "serviceId" });
   Service.hasMany(Favorite, { foreignKey: "serviceId" });
-
   // Service.hasMany Timeline
   Service.hasMany(Timeline, {
     foreignKey: "serviceId",
@@ -201,9 +210,8 @@ export const defineConstrains = () => {
   });
   Asset.belongsTo(User, {
     foreignKey: "userId",
-    as: "profilePicture",
-    scope: { key: "userImage" },
   });
+
   Asset.belongsTo(Post, { foreignKey: "postId" });
   //assetTypes
   AssetTypes.hasMany(Asset, { foreignKey: "key", targetKey: "key" });
@@ -214,6 +222,7 @@ export const defineConstrains = () => {
   // service provider
   ServiceProvider.hasMany(Service);
   ServiceProvider.hasMany(Coupon);
+  ServiceProvider.hasMany(Dispute, { foreignKey: "serviceProviderId" });
   ServiceProvider.hasMany(Asset);
   ServiceProvider.hasMany(UserRole, {
     foreignKey: "relatedId",
@@ -234,9 +243,9 @@ export const defineConstrains = () => {
     foreignKey: "serviceProviderId",
     otherKey: "categoryId",
   });
+  ServiceProvider.hasMany(Notification, { foreignKey: "serviceProviderId" });
 
   //category
-
   Category.hasMany(Subcategory, {
     foreignKey: "categoryId",
   });
