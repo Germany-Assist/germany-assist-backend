@@ -447,11 +447,33 @@ VariantResponse:
       format: date-time
 
 ServiceCreateInput:
+  # body("title")
+  #   .isString()
+  #   .withMessage("Title must be a string")
+  #   .isLength({ min: 3, max: 50 })
+  #   .withMessage("Title must be between 3 and 50 characters"),
+  # body("description")
+  #   .isString()
+  #   .withMessage("Description must be a string")
+  #   .isLength({ min: 10, max: 5000 })
+  #   .withMessage("Description must be between 10 and 5000 characters"),
+  # body("type")
+  #   .isIn([SERVICE_TYPES.TIMELINE, SERVICE_TYPES.ONE_TIME])
+  #   .withMessage("Type must be either service or product"),
+  # body("subcategoryId")
+  #   .notEmpty()
+  #   .withMessage("Subcategory ID is required")
+  #   .custom((i) => {
+  #     const unHashed = hashIdUtil.hashIdDecode(i);
+  #     if (!unHashed) throw new Error("invalid id");
+  #     return true;
+  #   }),
   type: object
   required:
     - title
     - description
-    - category
+    - type
+    - subcategoryId
   properties:
     title:
       type: string
@@ -463,16 +485,13 @@ ServiceCreateInput:
       minLength: 10
       maxLength: 5000
       example: "Comprehensive website design and development services."
-    category:
+    type:
       type: string
-      example: "Web Development"
-    image:
+      enum: [timeline, oneTime]
+      example: "timeline"
+    subcategoryId:
       type: string
-      format: uri
-      example: "https://example.com/service_image.jpg"
-    publish:
-      type: boolean
-      example: false
+      example: "subcategoryIdHash"
     # Images will be handled by multipart/form-data directly in the path definition
 
 ServiceUpdateInput:

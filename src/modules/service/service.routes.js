@@ -6,7 +6,10 @@ import {
   idHashedParamValidator,
 } from "../../validators/general.validators.js";
 import { validateExpress } from "../../middlewares/expressValidator.js";
-import { createServiceValidator } from "./services.validators.js";
+import {
+  createServiceValidator,
+  pauseResumeServiceValidator,
+} from "./services.validators.js";
 import timelineRouter from "../timeline/timeline.routes.js";
 import variantRouter from "../variant/variant.routes.js";
 import multerUpload from "../../configs/multer.config.js";
@@ -35,7 +38,6 @@ serviceRouter.post(
   serviceController.createService,
 );
 
-// Get all services of the authenticated provider (approved or not)
 serviceRouter.get(
   "/provider/services",
   jwt.authenticateJwt,
@@ -65,20 +67,13 @@ serviceRouter.delete(
   serviceController.deleteService,
 );
 serviceRouter.put(
-  "/provider/services/status",
+  "/provider/services/:id/status",
+  pauseResumeServiceValidator,
+  validateExpress,
   jwt.authenticateJwt,
-  serviceController.alterServiceStatusSP,
+  serviceController.pauseResumeService,
 );
-serviceRouter.get(
-  "/provider/services/unpublish/:serviceId",
-  jwt.authenticateJwt,
-  serviceController.unpublishService,
-);
-serviceRouter.get(
-  "/provider/services/publish/:serviceId",
-  jwt.authenticateJwt,
-  serviceController.publishService,
-);
+
 /* ---------------- Admin Routes ---------------- */
 // Get all services (any status, any provider)
 serviceRouter.get(
@@ -102,7 +97,9 @@ serviceRouter.post(
   serviceController.restoreService,
 );
 serviceRouter.put(
-  "/admin/services/status",
+  "/admin/services/status/:id",
+  idHashedParamValidator,
+  validateExpress,
   jwt.authenticateJwt,
   serviceController.alterServiceStatus,
 );

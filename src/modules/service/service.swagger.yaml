@@ -1,7 +1,7 @@
 /service:
   get:
     tags: [Service]
-    summary: Get all approved and published services
+    summary: Get all live services
     responses:
       "200":
         description: List of services

@@ -5,6 +5,7 @@ import {
   EMAIL_PASS,
   EMAIL_SMTP_PORT,
   EMAIL_USER,
+  SEND_EMAILS,
 } from "../../configs/email.config.js";
 import { NODE_ENV } from "../../configs/serverConfig.js";
 
@@ -21,6 +22,7 @@ class EmailService {
     });
   }
   async sendEmail({ to, subject, html, text }) {
+    if (!SEND_EMAILS) return;
     try {
       await this.transporter.sendMail({
         from: `"Germany Assist" <${EMAIL_USER}>`,

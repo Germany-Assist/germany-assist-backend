@@ -47,8 +47,8 @@ const permissionsData = [
   { action: "read", resource: "service", description: "View services" }, //public
   { action: "update", resource: "service", description: "Modify services" }, //ownership:admin,root
   { action: "delete", resource: "service", description: "Remove services" }, //ownership:admin,root  //super:superAdmin
-  { action: "publish", resource: "service", description: "Publish services" }, //ownership:admin,root  //super:superAdmin,admin
-  { action: "unpublish", resource: "service", description: "Unpublish" }, //ownership:admin,root  //super:superAdmin,admin
+  { action: "pause", resource: "service", description: "Publish services" }, //ownership:admin,root  //super:superAdmin,admin
+  { action: "resume", resource: "service", description: "Unpublish" }, //ownership:admin,root  //super:superAdmin,admin
   { action: "approve", resource: "service", description: "Approve services" }, //super:admin,superAdmin
   { action: "reject", resource: "service", description: "Reject services" }, //super:admin,superAdmin
   { action: "statistical", resource: "service", description: "statistical" }, //ownership:root,rep //super:admin,superAdmin

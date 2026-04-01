@@ -8,12 +8,6 @@ const encodeId = (id) => hashIdUtil.hashIdEncode(id);
 const resolveImageUrl = async (url) => {
   return url ? await generateDownloadUrl(url) : undefined;
 };
-const calculateLevel = ({ approved, published, rejected }) => {
-  if (approved && published) return "ready";
-  if (approved && !published) return "accepted";
-  if (!approved && !rejected) return "pending";
-  if (rejected) return "alert";
-};
 
 const timelinesFormatter = (timelines) => {
   if (!timelines || timelines.length < 1) return undefined;
@@ -94,10 +88,8 @@ export const sanitizeServices = async (services = []) => {
       image: await resolveImageUrl(service.image[0]?.url),
       timelines: timelinesFormatter(service.timelines),
       variants: variantsFormatter(service.variants),
-      published: service.published,
-      approved: service.approved,
-      rejected: service.rejected,
-      level: calculateLevel(service),
+      status: service.status,
+      isPaused: service.isPaused,
     })),
   );
 };
@@ -162,6 +154,7 @@ export const sanitizeServiceProfile = async (service) => {
     views: service.views,
     rating: service.rating,
     totalReviews: service.totalReviews,
+    isPaused: service.isPaused,
 
     /* -------- relations -------- */
     category: {

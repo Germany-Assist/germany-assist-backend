@@ -93,22 +93,26 @@ Service.init(
         min: { args: [0], msg: "Total reviews cannot be negative" },
       },
     },
-    approved: {
+    status: {
+      type: DataTypes.ENUM(
+        "approved",
+        "draft",
+        "pending",
+        "rejected",
+        "archived",
+      ),
+      allowNull: false,
+      defaultValue: "draft",
+    },
+    isPaused: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
     },
-    rejected: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
+    rejectionReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
-    published: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
-
     owner: {
       type: DataTypes.VIRTUAL,
       get() {

@@ -1,5 +1,6 @@
 import { body, param } from "express-validator";
 import hashIdUtil from "../../utils/hashId.util.js";
+import { SERVICE_TYPES } from "../../configs/constants.js";
 
 // Validation for creating a new service
 export const createServiceValidator = [
@@ -13,14 +14,17 @@ export const createServiceValidator = [
     .withMessage("Description must be a string")
     .isLength({ min: 10, max: 5000 })
     .withMessage("Description must be between 10 and 5000 characters"),
-  body("category")
+  body("type")
+    .isIn([SERVICE_TYPES.TIMELINE, SERVICE_TYPES.ONE_TIME])
+    .withMessage("Type must be either service or product"),
+  body("subcategoryId")
     .notEmpty()
-    .withMessage("Category cannot be empty")
-    .isString()
-    .withMessage("category must be a string"),
-  body("image").optional().isURL().withMessage("Image must be a valid URL"),
-
-  body("publish").optional().isBoolean(),
+    .withMessage("Subcategory ID is required")
+    .custom((i) => {
+      const unHashed = hashIdUtil.hashIdDecode(i);
+      if (!unHashed) throw new Error("invalid id");
+      return true;
+    }),
 ];
 
 // Validation for updating a service
@@ -65,4 +69,51 @@ export const createInquiryValidator = [
     .trim()
     .isLength({ min: 0, max: 5000 })
     .withMessage("Description must be between 10 and 5000 characters"),
+];
+
+export const pauseResumeServiceValidator = [
+  param("id")
+    .notEmpty()
+    .withMessage("Service ID param is required")
+    .custom((i) => {
+      const unHashed = hashIdUtil.hashIdDecode(i);
+      if (!unHashed) throw new Error("invalid id");
+      return true;
+    }),
+  body("action")
+    .notEmpty()
+    .withMessage("Action is required")
+    .isString()
+    .withMessage("Action must be a string")
+    .custom((a) => {
+      if (!["pause", "resume"].includes(a)) throw new Error("invalid action");
+      return true;
+    }),
+];
+
+export const approveRejectServiceValidator = [
+  param("id")
+    .notEmpty()
+    .withMessage("Service ID param is required")
+    .custom((i) => {
+      const unHashed = hashIdUtil.hashIdDecode(i);
+      if (!unHashed) throw new Error("invalid id");
+      return true;
+    }),
+  body("action")
+    .notEmpty()
+    .withMessage("Action is required")
+    .isString()
+    .withMessage("Action must be a string")
+    .custom((a) => {
+      if (!["approve", "reject"].includes(a)) throw new Error("invalid action");
+      return true;
+    }),
+  body("rejection_reason")
+    .optional()
+    .isString()
+    .withMessage("rejection reason must be a string")
+    .trim()
+    .isLength({ min: 0, max: 5000 })
+    .withMessage("rejection reason must be between 10 and 5000 characters"),
 ];

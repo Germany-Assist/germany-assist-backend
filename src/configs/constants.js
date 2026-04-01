@@ -49,3 +49,31 @@ export const AUDIT_LOGS_CONSTANTS = {
   ACTOR_CLIENT: "client",
   ACTOR_PROVIDER: "provider",
 };
+
+export const SERVICES_STATUS = {
+  APPROVED: "approved",
+  DRAFT: "draft",
+  PENDING: "pending", //provider
+  ACTIVE: "active", //admin
+  REJECTED: "rejected", //admin
+  ARCHIVED: "archived",
+};
+export const SERVICE_TYPES = {
+  ONE_TIME: "oneTime",
+  TIMELINE: "timeline",
+};
+
+export const ORDER_STATUS = {
+  ACTIVE: "active",
+  CLOSED: "closed",
+  COMPLETED: "completed",
+  CANCELED: "canceled",
+  REJECTED: "rejected",
+  ACCEPTED: "accepted",
+  REFUNDED: "refunded",
+};
+
+export const SERVICE_ACTIONS = {
+  PAUSE: "pause",
+  RESUME: "resume",
+};
