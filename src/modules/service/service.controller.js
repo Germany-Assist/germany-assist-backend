@@ -190,7 +190,6 @@ export async function alterServiceStatus(req, res, next) {
     next(error);
   }
 }
-//TODO delete this
 export async function pauseResumeService(req, res, next) {
   try {
     const { action } = req.body;
