@@ -1,11 +1,9 @@
-import { col, fn, literal, Op, where } from "sequelize";
+import { Op } from "sequelize";
 import db from "../../database/index.js";
 import { AppError } from "../../utils/error.class.js";
 import serviceRepository from "./service.repository.js";
-import serviceMappers from "./service.mappers.js";
 import hashIdUtil from "../../utils/hashId.util.js";
 import AssetService from "../../services/assts.services.js";
-import serviceProviderRepository from "../serviceProvider/serviceProvider.repository .js";
 import {
   NOTIFICATION_EVENTS,
   SERVICE_ACTIONS,
@@ -13,6 +11,7 @@ import {
   SERVICES_STATUS,
 } from "../../configs/constants.js";
 import notificationQueue from "../../jobs/queues/notification.queue.js";
+
 const publicAttributes = [
   "id",
   "title",
@@ -24,6 +23,7 @@ const publicAttributes = [
   "status",
   "totalReviews",
 ];
+
 const safeJsonParse = (value, fieldName) => {
   if (!value) return null;
   try {
@@ -32,6 +32,9 @@ const safeJsonParse = (value, fieldName) => {
     throw new AppError(400, `Invalid JSON in ${fieldName}`);
   }
 };
+
+/* ---------------- Main Services ---------------- */
+
 async function createService(req, transaction) {
   let serviceData = {
     userId: req.auth.id,
@@ -41,24 +44,16 @@ async function createService(req, transaction) {
     type: req.body.type,
     subcategoryId: hashIdUtil.hashIdDecode(req.body.subcategoryId),
   };
-  //quality gate for categories creation
-  // await serviceProviderRepository.checkIfSPAllowedCategory(
-  //   req.auth.relatedId,
-  //   hashIdUtil.hashIdDecode(req.body.subcategory),
-  //   transaction,
-  // );
-  if (serviceData.type === SERVICE_TYPES.TIMELINE) {
+
+  if (serviceData.type === SERVICE_TYPES.timeline) {
     serviceData.timelines = safeJsonParse(req.body.timelines, "timelines");
-  } else if (serviceData.type === SERVICE_TYPES.ONE_TIME) {
+  } else if (serviceData.type === SERVICE_TYPES.oneTime) {
     serviceData.variants = safeJsonParse(req.body.variants, "variants");
   }
+
   if (!serviceData.variants && !serviceData.timelines)
-    throw new AppError(
-      422,
-      "invalid option",
-      true,
-      "invalid option for timeline or variants",
-    );
+    throw new AppError(422, "invalid option for timeline or variants");
+
   const service = await serviceRepository.createService(
     serviceData,
     transaction,
@@ -66,10 +61,8 @@ async function createService(req, transaction) {
 
   const files = req.files || [];
   const imageKeys = req.body.imageKeys || [];
-
-  if (files.length !== imageKeys.length) {
+  if (files.length !== imageKeys.length)
     throw new Error("Files and imageKeys length mismatch");
-  }
 
   const groupedFiles = {};
   files.forEach((file, index) => {
@@ -79,7 +72,7 @@ async function createService(req, transaction) {
   });
 
   for (const [type, files] of Object.entries(groupedFiles)) {
-    const assets = await AssetService.upload({
+    await AssetService.upload({
       type,
       files,
       auth: req.auth,
@@ -87,6 +80,7 @@ async function createService(req, transaction) {
       transaction,
     });
   }
+
   notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.CREATED, {
     serviceId: service.id,
   });
@@ -98,6 +92,7 @@ async function getAllServices(filters, authority) {
   const limit = parseInt(filters.limit) || 10;
   const offset = (page - 1) * limit;
   const where = {};
+
   if (authority === "admin") {
     if (filters.status) where.status = SERVICES_STATUS[filters.status];
     if (filters.isPaused) where.isPaused = filters.isPaused;
@@ -106,10 +101,10 @@ async function getAllServices(filters, authority) {
     if (filters.status) where.status = SERVICES_STATUS[filters.status];
     if (filters.isPaused) where.isPaused = filters.isPaused;
   } else {
-    // client
     where.status = SERVICES_STATUS.approved;
     where.isPaused = false;
   }
+
   if (filters.maxRating || filters.minRating) {
     where.rating = {};
     if (filters.minRating) where.rating[Op.gte] = filters.minRating;
@@ -118,9 +113,9 @@ async function getAllServices(filters, authority) {
   if (filters.id) where.id = filters.id;
   if (filters.title) where.title = { [Op.iLike]: `%${filters.title}%` };
   if (filters.type) where.type = filters.type;
-  if (filters.serviceProvider && authority !== "serviceProvider") {
+  if (filters.serviceProvider && authority !== "serviceProvider")
     where.serviceProviderId = filters.serviceProvider;
-  }
+
   const include = [
     {
       model: db.Timeline,
@@ -151,38 +146,26 @@ async function getAllServices(filters, authority) {
       ...(filters.category && { where: { title: filters.category } }),
     },
   ];
-  const total = await db.Service.count({
+
+  const result = await serviceRepository.findAndCountAll({
     where,
-    distinct: true,
-    col: "id",
-  });
-  const rows = await db.Service.findAll({
-    where,
-    distinct: true,
-    attributes: [
-      ...publicAttributes,
-      "rejectionReason",
-      "isPaused",
-      "status",
-      "created_at",
-    ],
-    include,
     limit,
     offset,
+    include,
   });
+
   return {
     page,
     limit,
-    total,
-    totalPages: Math.ceil(total / limit),
-    data: rows,
+    total: result.count,
+    totalPages: Math.ceil(result.count / limit),
+    data: result.rows,
   };
 }
 
 async function getServiceByIdPublic(id) {
-  const service = await db.Service.findOne({
-    where: { status: SERVICES_STATUS.APPROVED, isPaused: false, id },
-    raw: false,
+  const service = await serviceRepository.findOne({
+    where: { status: SERVICES_STATUS.approved, isPaused: false, id },
     attributes: publicAttributes,
     include: [
       {
@@ -201,10 +184,7 @@ async function getServiceByIdPublic(id) {
         as: "variants",
         required: false,
       },
-      {
-        model: db.Subcategory,
-        attributes: ["title", "id", "label"],
-      },
+      { model: db.Subcategory, attributes: ["title", "id", "label"] },
       {
         model: db.Review,
         attributes: ["body", "rating"],
@@ -217,58 +197,64 @@ async function getServiceByIdPublic(id) {
       },
       {
         model: db.ServiceProvider,
-        //TODO to create sp card
         attributes: ["id", "name", "email", "phoneNumber", "isVerified"],
       },
     ],
   });
 
-  if (!service)
-    throw new AppError(404, "Service not found", true, "Service not found");
-  service.increment("views");
-  await service.save();
+  if (!service) throw new AppError(404, "Service not found");
+  await service.increment("views");
   return service.toJSON();
 }
+
 async function getServiceProfileForAdminAndSP(id, SPID) {
   const where = { id };
   if (SPID) where.serviceProviderId = SPID;
-  const service = await db.Service.findOne({
+  const service = await serviceRepository.findOne({
     where,
-    raw: false,
-    attributes: [...publicAttributes],
+    attributes: publicAttributes,
     include: [
       {
         model: db.Asset,
         attributes: ["mediaType", "key", "confirmed", "url", "name", "thumb"],
       },
       {
-        model: db.Subcategory,
-        attributes: ["title"],
+        model: db.Timeline,
+        where: { isArchived: false },
+        as: "timelines",
+        required: false,
       },
+      {
+        model: db.Variant,
+        where: { isArchived: false },
+        as: "variants",
+        required: false,
+      },
+      { model: db.Subcategory, attributes: ["title", "id", "label"] },
       {
         model: db.Review,
         attributes: ["body", "rating"],
+        limit: 4,
         include: {
           model: db.User,
           attributes: ["firstName", "lastName", "id"],
+          as: "user",
         },
       },
       {
-        model: db.User,
-        attributes: ["firstName", "lastName", "email"],
-      },
-      {
-        model: db.Timeline,
-        attributes: ["id", "isArchived", "label"],
+        model: db.ServiceProvider,
+        attributes: ["id", "name", "email", "phoneNumber", "isVerified"],
       },
     ],
   });
-  if (!service)
-    throw new AppError(404, "Service not found", true, "Service not found");
+
+  if (!service) throw new AppError(404, "Service not found");
+  await service.increment("views");
   return service.toJSON();
 }
+
 async function getClientServices(userId) {
-  return await db.Service.findAll({
+  return await serviceRepository.findAll({
     attributes: publicAttributes,
     include: [
       {
@@ -276,103 +262,92 @@ async function getClientServices(userId) {
         required: true,
         attributes: ["id"],
         where: {
-          userId: userId,
+          userId,
           status: { [Op.or]: ["paid", "fulfilled", "completed"] },
         },
         include: [
-          {
-            model: db.Timeline,
-            attributes: ["id", "label"],
-            required: true,
-          },
+          { model: db.Timeline, attributes: ["id", "label"], required: true },
         ],
       },
     ],
   });
 }
+
 async function updateService(id, updateData) {
-  const service = await db.Service.findByPk(id);
-  if (!service)
-    throw new AppError(404, "Service not found", true, "Service not found");
+  const service = await serviceRepository.findByPk(id);
+  if (!service) throw new AppError(404, "Service not found");
   return service.update(updateData);
 }
+
 async function deleteService(id) {
-  const service = await db.Service.findOne({
-    where: { id },
-  });
-  if (!service)
-    throw new AppError(404, "Service not found", true, "Service not found");
+  const service = await serviceRepository.findByPk(id);
+  if (!service) throw new AppError(404, "Service not found");
   return await service.destroy();
 }
+
 async function restoreService(id) {
-  const service = await db.Service.findByPk(id, { paranoid: false });
-  if (!service)
-    throw new AppError(404, "Service not found", true, "Service not found");
-  if (!service.deletedAt)
-    throw new AppError(
-      400,
-      "Service isn't deleted",
-      true,
-      "Service isn't deleted",
-    );
+  const service = await serviceRepository.findByPk(id, { paranoid: false });
+  if (!service) throw new AppError(404, "Service not found");
+  if (!service.deletedAt) throw new AppError(400, "Service isn't deleted");
   return await service.restore();
 }
+
+/* ---------------- Status & Logic ---------------- */
+
 async function alterServiceStatus({ id, status, rejectionReason }) {
-  const service = await db.Service.findByPk(id);
+  const service = await serviceRepository.findByPk(id);
+  if (!service) throw new AppError(400, "failed to find service");
   if (service.status === SERVICES_STATUS.draft)
-    throw new AppError(400, "service is in draft", true);
-  if (!service) throw new AppError(400, "failed to find service", false);
+    throw new AppError(400, "service is in draft");
+
   if (status === SERVICES_STATUS.approved) {
     service.status = SERVICES_STATUS.approved;
+    service.rejectionReason = null; // Fix: Clear rejection reason on success
   } else if (status === SERVICES_STATUS.rejected) {
-    //validate the rejection response
-    if (!rejectionReason.trim())
-      throw new AppError(400, "rejection reason is required", false);
+    if (!rejectionReason?.trim())
+      throw new AppError(400, "rejection reason is required");
     service.status = SERVICES_STATUS.rejected;
     service.rejectionReason = rejectionReason;
   } else {
-    throw new AppError(400, "failed to process request", false);
+    throw new AppError(400, "failed to process request");
   }
+
   await service.save();
 
-  switch (status) {
-    case "approved":
-      notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.APPROVED, {
-        serviceId: id,
-      });
-      break;
-    case "rejected":
-      notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.REJECTED, {
-        serviceId: id,
-      });
-      break;
-    default:
-      break;
-  }
-  return;
+  const event =
+    status === "approved"
+      ? NOTIFICATION_EVENTS.SERVICE.APPROVED
+      : NOTIFICATION_EVENTS.SERVICE.REJECTED;
+  notificationQueue.add(event, { serviceId: id });
 }
-/**
- * Pause or resume a service for a given provider.
- * @param {number} id - Service id
- * @param {string} action - Action to take on the service, either "pause" or "resume"
- * @param {string} auth - auth
- * @throws {AppError} - If service is not found, invalid action, or if there is an error while saving the service
- * @returns {Promise<void>}
- */
+
 async function pauseResumeService(id, action, auth) {
-  const service = await db.Service.findOne({
+  const service = await serviceRepository.findOne({
     where: { id, serviceProviderId: auth.relatedId },
   });
-  if (!service) throw new AppError(400, "failed to find service", false);
-  if (action === SERVICE_ACTIONS.RESUME) {
-    service.isPaused = false;
-    return await service.save();
-  } else if (action === SERVICE_ACTIONS.PAUSE) {
-    service.isPaused = true;
-    return await service.save();
-  }
+  if (!service) throw new AppError(400, "failed to find service");
+  service.isPaused = action === SERVICE_ACTIONS.PAUSE;
+  return await service.save();
 }
-export const updateServiceRating = async (
+
+async function requestApproval(serviceId, providerId) {
+  const service = await serviceRepository.findOne({
+    where: { id: serviceId, serviceProviderId: providerId },
+  });
+  if (!service) throw new AppError(400, "failed to find service");
+  if (
+    service.status !== SERVICES_STATUS.draft &&
+    service.status !== SERVICES_STATUS.rejected
+  )
+    throw new AppError(400, "service is not eligible for approval");
+
+  service.status = SERVICES_STATUS.pending;
+  await service.save();
+}
+
+/* ---------------- Ratings & Favorites ---------------- */
+
+async function updateServiceRating(
   {
     serviceId,
     newRating = 0,
@@ -381,15 +356,11 @@ export const updateServiceRating = async (
     isDelete = false,
   } = {},
   t,
-) => {
-  if (typeof newRating !== "number" || newRating < 0 || newRating > 5) {
-    throw new AppError(400, "Invalid rating value", true);
-  }
-  const service = await db.Service.findByPk(serviceId);
-  if (!service) {
-    throw new AppError(404, "service not found", true, "service not found");
-  }
-  let { totalReviews: totalReviews = 0, rating: currentRating = 0 } = service;
+) {
+  const service = await serviceRepository.findByPk(serviceId);
+  if (!service) throw new AppError(404, "service not found");
+
+  let { totalReviews = 0, rating: currentRating = 0 } = service;
 
   if (isDelete) {
     if (totalReviews <= 1) {
@@ -410,47 +381,21 @@ export const updateServiceRating = async (
   }
 
   return await service.update(
-    {
-      rating: currentRating,
-      totalReviews: totalReviews,
-    },
+    { rating: currentRating, totalReviews },
     { transaction: t },
   );
-};
-export async function alterFavorite(serviceId, userId, status) {
+}
+
+async function alterFavorite(serviceId, userId, status) {
   if (status === "add") {
-    await db.Favorite.create({
-      serviceId: serviceId,
-      userId: userId,
-    });
+    await db.Favorite.create({ serviceId, userId });
   } else if (status === "remove") {
-    await db.Favorite.destroy({
-      where: { serviceId: serviceId, userId: userId },
-    });
+    await db.Favorite.destroy({ where: { serviceId, userId } });
   } else {
-    throw new AppError(500, "invalid status", false);
+    throw new AppError(500, "invalid status");
   }
 }
-export async function requestApproval(serviceId, providerId) {
-  const service = await db.Service.findOne({
-    where: { id: serviceId, serviceProviderId: providerId },
-  });
-  if (!service) throw new AppError(400, "failed to find service", false);
-  if (
-    service.status !== SERVICES_STATUS.draft &&
-    service.status !== SERVICES_STATUS.rejected
-  )
-    throw new AppError(
-      400,
-      "service is not in draft or eligible fo approval",
-      false,
-      "service is not in draft or eligible fo approval",
-    );
-  //TODO
-  //quality gate check
-  service.status = SERVICES_STATUS.pending;
-  await service.save();
-}
+
 const serviceServices = {
   requestApproval,
   createService,
@@ -466,4 +411,5 @@ const serviceServices = {
   alterFavorite,
   getClientServices,
 };
+
 export default serviceServices;

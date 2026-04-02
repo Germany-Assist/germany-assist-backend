@@ -15,8 +15,8 @@ export const createServiceValidator = [
     .isLength({ min: 10, max: 5000 })
     .withMessage("Description must be between 10 and 5000 characters"),
   body("type")
-    .isIn([SERVICE_TYPES.TIMELINE, SERVICE_TYPES.ONE_TIME])
-    .withMessage("Type must be either service or product"),
+    .isIn([SERVICE_TYPES.oneTime, SERVICE_TYPES.timeline])
+    .withMessage("Type must be either one time or timeline"),
   body("subcategoryId")
     .notEmpty()
     .withMessage("Subcategory ID is required")
