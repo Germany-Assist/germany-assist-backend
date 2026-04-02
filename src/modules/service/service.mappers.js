@@ -83,6 +83,8 @@ export const sanitizeServices = async (services = []) => {
       rating: service.rating,
       totalReviews: service.totalReviews,
       type: service.type,
+      isPaused: service.isPaused,
+      rejectionReason: service.rejectionReason,
       category: service.Subcategory.title,
       serviceProvider: service.ServiceProvider.name,
       image: await resolveImageUrl(service.image[0]?.url),
@@ -155,7 +157,7 @@ export const sanitizeServiceProfile = async (service) => {
     rating: service.rating,
     totalReviews: service.totalReviews,
     isPaused: service.isPaused,
-
+    rejectionReason: service.rejectionReason,
     /* -------- relations -------- */
     category: {
       id: encodeId(service.Subcategory.id),

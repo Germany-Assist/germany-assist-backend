@@ -47,7 +47,7 @@ export async function totalServices() {
 }
 export async function totalLiveServices() {
   return await db.Service.count({
-    where: { status: "active" },
+    where: { status: "approved" },
   });
 }
 export async function totalPendingServices() {

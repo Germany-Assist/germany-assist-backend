@@ -37,12 +37,13 @@ serviceRouter.post(
   validateExpress,
   serviceController.createService,
 );
-
+// get the provider his services no matter what the state
 serviceRouter.get(
   "/provider/services",
   jwt.authenticateJwt,
   serviceController.getAllServicesSP,
 );
+// Get a specific service no matter the state
 serviceRouter.get(
   "/provider/services/:id",
   jwt.authenticateJwt,
@@ -66,6 +67,7 @@ serviceRouter.delete(
   jwt.authenticateJwt,
   serviceController.deleteService,
 );
+// Pause or resume a service
 serviceRouter.put(
   "/provider/services/:id/status",
   pauseResumeServiceValidator,
@@ -73,7 +75,14 @@ serviceRouter.put(
   jwt.authenticateJwt,
   serviceController.pauseResumeService,
 );
-
+// request approval on a service
+serviceRouter.put(
+  "/provider/services/:id/requestApproval",
+  idHashedParamValidator,
+  validateExpress,
+  jwt.authenticateJwt,
+  serviceController.requestApproval,
+);
 /* ---------------- Admin Routes ---------------- */
 // Get all services (any status, any provider)
 serviceRouter.get(
@@ -96,6 +105,7 @@ serviceRouter.post(
   validateExpress,
   serviceController.restoreService,
 );
+//approve and reject
 serviceRouter.put(
   "/admin/services/status/:id",
   idHashedParamValidator,

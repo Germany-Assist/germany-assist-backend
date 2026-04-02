@@ -1,4 +1,4 @@
-import { col, fn, literal, Op } from "sequelize";
+import { col, fn, literal, Op, where } from "sequelize";
 import db from "../../database/index.js";
 import { AppError } from "../../utils/error.class.js";
 import serviceRepository from "./service.repository.js";
@@ -100,11 +100,15 @@ async function getAllServices(filters, authority) {
   const where = {};
   if (authority === "admin") {
     if (filters.status) where.status = SERVICES_STATUS[filters.status];
+    if (filters.isPaused) where.isPaused = filters.isPaused;
   } else if (authority === "serviceProvider") {
     where.serviceProviderId = filters.serviceProvider;
     if (filters.status) where.status = SERVICES_STATUS[filters.status];
+    if (filters.isPaused) where.isPaused = filters.isPaused;
   } else {
-    where.status = SERVICES_STATUS.APPROVED;
+    // client
+    where.status = SERVICES_STATUS.approved;
+    where.isPaused = false;
   }
   if (filters.maxRating || filters.minRating) {
     where.rating = {};
@@ -155,8 +159,13 @@ async function getAllServices(filters, authority) {
   const rows = await db.Service.findAll({
     where,
     distinct: true,
-    // subQuery: false,
-    attributes: [...publicAttributes, "isPaused", "status", "created_at"],
+    attributes: [
+      ...publicAttributes,
+      "rejectionReason",
+      "isPaused",
+      "status",
+      "created_at",
+    ],
     include,
     limit,
     offset,
@@ -308,29 +317,31 @@ async function restoreService(id) {
     );
   return await service.restore();
 }
-async function alterServiceStatus(id, status, rejection_reason) {
+async function alterServiceStatus({ id, status, rejectionReason }) {
   const service = await db.Service.findByPk(id);
+  if (service.status === SERVICES_STATUS.draft)
+    throw new AppError(400, "service is in draft", true);
   if (!service) throw new AppError(400, "failed to find service", false);
-  if (status === SERVICES_STATUS.APPROVED) {
-    service.status = SERVICES_STATUS.APPROVED;
-  } else if (status === SERVICES_STATUS.REJECTED) {
+  if (status === SERVICES_STATUS.approved) {
+    service.status = SERVICES_STATUS.approved;
+  } else if (status === SERVICES_STATUS.rejected) {
     //validate the rejection response
-    if (!rejection_reason.trim())
+    if (!rejectionReason.trim())
       throw new AppError(400, "rejection reason is required", false);
-    service.status = SERVICES_STATUS.REJECTED;
-    service.rejection_reason = rejection_reason;
+    service.status = SERVICES_STATUS.rejected;
+    service.rejectionReason = rejectionReason;
   } else {
     throw new AppError(400, "failed to process request", false);
   }
   await service.save();
 
   switch (status) {
-    case "approve":
+    case "approved":
       notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.APPROVED, {
         serviceId: id,
       });
       break;
-    case "reject":
+    case "rejected":
       notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.REJECTED, {
         serviceId: id,
       });
@@ -420,8 +431,28 @@ export async function alterFavorite(serviceId, userId, status) {
     throw new AppError(500, "invalid status", false);
   }
 }
-
+export async function requestApproval(serviceId, providerId) {
+  const service = await db.Service.findOne({
+    where: { id: serviceId, serviceProviderId: providerId },
+  });
+  if (!service) throw new AppError(400, "failed to find service", false);
+  if (
+    service.status !== SERVICES_STATUS.draft &&
+    service.status !== SERVICES_STATUS.rejected
+  )
+    throw new AppError(
+      400,
+      "service is not in draft or eligible fo approval",
+      false,
+      "service is not in draft or eligible fo approval",
+    );
+  //TODO
+  //quality gate check
+  service.status = SERVICES_STATUS.pending;
+  await service.save();
+}
 const serviceServices = {
+  requestApproval,
   createService,
   getAllServices,
   pauseResumeService,

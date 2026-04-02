@@ -177,13 +177,13 @@ export async function alterServiceStatus(req, res, next) {
       ["admin", "super_admin"],
       false,
     );
-    const { status, rejection_reason } = req.body;
+    const { status, rejectionReason } = req.body;
     const { id } = req.params;
-    await serviceServices.alterServiceStatus(
-      hashIdUtil.hashIdDecode(id),
+    await serviceServices.alterServiceStatus({
+      id: hashIdUtil.hashIdDecode(id),
       status,
-      rejection_reason,
-    );
+      rejectionReason,
+    });
 
     res.sendStatus(200);
   } catch (error) {
@@ -272,6 +272,23 @@ export async function getClientServices(req, res, next) {
     next(error);
   }
 }
+export async function requestApproval(req, res, next) {
+  try {
+    const { id } = req.params;
+    await authUtils.checkRoleAndPermission(
+      req.auth,
+      ["service_provider_rep", "service_provider_root"],
+      false,
+    );
+    await serviceServices.requestApproval(
+      hashIdUtil.hashIdDecode(id),
+      req.auth.relatedId,
+    );
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+}
 const serviceController = {
   pauseResumeService,
   alterServiceStatus,
@@ -283,6 +300,7 @@ const serviceController = {
   getAllServicesSP,
   getAllServices,
   createService,
+  requestApproval,
   getServiceProfileForAdminAndSP,
   addToFavorite,
   removeFromFavorite,

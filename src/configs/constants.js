@@ -51,16 +51,16 @@ export const AUDIT_LOGS_CONSTANTS = {
 };
 
 export const SERVICES_STATUS = {
-  APPROVED: "approved",
-  DRAFT: "draft",
-  PENDING: "pending", //provider
-  ACTIVE: "active", //admin
-  REJECTED: "rejected", //admin
-  ARCHIVED: "archived",
+  approved: "approved",
+  draft: "draft",
+  pending: "pending", //provider
+  active: "active", //admin
+  rejected: "rejected", //admin
+  archived: "archived",
 };
 export const SERVICE_TYPES = {
-  ONE_TIME: "oneTime",
-  TIMELINE: "timeline",
+  oneTime: "oneTime",
+  timeline: "timeline",
 };
 
 export const ORDER_STATUS = {
