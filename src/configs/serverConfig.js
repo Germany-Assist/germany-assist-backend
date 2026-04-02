@@ -16,3 +16,4 @@ export const HASH_ID_SALT = process.env.HASH_ID_SALT;
 export const STRIPE_SK = process.env.STRIPE_SK;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 export const APP_DOMAIN = process.env.APP_DOMAIN;
+export const SUB_DOMAIN = process.env.SUB_DOMAIN || "www";
