@@ -113,6 +113,17 @@ Service.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    deliveryMode: {
+      type: DataTypes.ENUM("online", "hybrid", "inPerson"),
+      allowNull: false,
+      defaultValue: "online",
+    },
+    requirements: {
+      type: DataTypes.JSONB,
+      defaultValue: [],
+      allowNull: false,
+    },
+
     owner: {
       type: DataTypes.VIRTUAL,
       get() {

@@ -22,11 +22,39 @@ const publicAttributes = [
   "rating",
   "status",
   "totalReviews",
+  "requirements",
 ];
 
-const safeJsonParse = (value, fieldName) => {
+const safeJsonParseVariants = (value, fieldName) => {
   if (!value) return null;
   try {
+    const variants = JSON.parse(value);
+    // im just white listing the inputs
+    // TODO: add validation
+    return variants.map((i) => ({
+      label: i.label,
+      price: i.price,
+      deliveryTime: i.deliveryTime,
+    }));
+    return JSON.parse(value);
+  } catch {
+    throw new AppError(400, `Invalid JSON in ${fieldName}`);
+  }
+};
+const safeJsonParseTimelines = (value, fieldName) => {
+  if (!value) return null;
+  try {
+    const timelines = JSON.parse(value);
+    // im just white listing the inputs
+    // TODO: add validation
+    return timelines.map((i) => ({
+      label: i.label,
+      price: i.price,
+      startDate: i.startDate,
+      deadlineDate: i.deadlineDate,
+      endDate: i.endDate,
+      maxParticipants: i.maxParticipants,
+    }));
     return JSON.parse(value);
   } catch {
     throw new AppError(400, `Invalid JSON in ${fieldName}`);
@@ -43,14 +71,16 @@ async function createService(req, transaction) {
     description: req.body.description,
     type: req.body.type,
     subcategoryId: hashIdUtil.hashIdDecode(req.body.subcategoryId),
+    requirements: req.body.requirements,
   };
-
   if (serviceData.type === SERVICE_TYPES.timeline) {
-    serviceData.timelines = safeJsonParse(req.body.timelines, "timelines");
+    serviceData.timelines = safeJsonParseTimelines(
+      req.body.timelines,
+      "timelines",
+    );
   } else if (serviceData.type === SERVICE_TYPES.oneTime) {
-    serviceData.variants = safeJsonParse(req.body.variants, "variants");
+    serviceData.variants = safeJsonParseVariants(req.body.variants, "variants");
   }
-
   if (!serviceData.variants && !serviceData.timelines)
     throw new AppError(422, "invalid option for timeline or variants");
 
@@ -129,14 +159,14 @@ async function getAllServices(filters, authority) {
         "label",
         "isArchived",
         "deadlineDate",
-        "limit",
+        "maxParticipants",
       ],
     },
     {
       model: db.Variant,
       required: false,
       as: "variants",
-      attributes: ["id", "price", "label", "isArchived", "limit"],
+      attributes: ["id", "price", "label", "isArchived", "deliveryTime"],
     },
     { model: db.Asset, as: "image", attributes: ["url"] },
     { model: db.ServiceProvider, attributes: ["name"] },
@@ -230,7 +260,11 @@ async function getServiceProfileForAdminAndSP(id, SPID) {
         as: "variants",
         required: false,
       },
-      { model: db.Subcategory, attributes: ["title", "id", "label"] },
+      {
+        model: db.Subcategory,
+        attributes: ["title", "id", "label"],
+        include: [{ model: db.Category, attributes: ["title", "id", "label"] }],
+      },
       {
         model: db.Review,
         attributes: ["body", "rating"],

@@ -125,6 +125,8 @@ export const sanitizeServiceProfile = async (service) => {
             startDate,
             endDate,
             isArchived,
+            deadlineDate,
+            maxParticipants,
           }) => ({
             id: encodeId(id),
             serviceId: encodeId(serviceId),
@@ -133,18 +135,23 @@ export const sanitizeServiceProfile = async (service) => {
             startDate,
             endDate,
             isArchived,
+            deadlineDate,
+            maxParticipants,
           }),
         ) ?? [])
       : undefined;
 
   const variants =
     service.type === "oneTime"
-      ? (service.variants?.map(({ id, serviceId, label, price }) => ({
-          id: encodeId(id),
-          serviceId: encodeId(serviceId),
-          label,
-          price: parseFloat(price),
-        })) ?? [])
+      ? (service.variants?.map(
+          ({ id, serviceId, label, price, deliveryTime }) => ({
+            id: encodeId(id),
+            serviceId: encodeId(serviceId),
+            label,
+            deliveryTime,
+            price: parseFloat(price),
+          }),
+        ) ?? [])
       : undefined;
 
   return {
@@ -158,13 +165,18 @@ export const sanitizeServiceProfile = async (service) => {
     totalReviews: service.totalReviews,
     isPaused: service.isPaused,
     rejectionReason: service.rejectionReason,
+    requirements: service.requirements,
     /* -------- relations -------- */
     category: {
+      id: encodeId(service.Subcategory.Category.id),
+      title: service.Subcategory.Category.title,
+      label: service.Subcategory.Category.label,
+    },
+    subCategory: {
       id: encodeId(service.Subcategory.id),
       title: service.Subcategory.title,
       label: service.Subcategory.label,
     },
-
     serviceProvider: {
       id: service.ServiceProvider.id,
       name: service.ServiceProvider.name,

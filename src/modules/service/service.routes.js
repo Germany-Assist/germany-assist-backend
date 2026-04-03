@@ -51,11 +51,20 @@ serviceRouter.get(
   validateExpress,
   serviceController.getServiceProfileForAdminAndSP,
 );
+//Mark as to do after finalization of onetimes and timelines
 // Update a service (allowed fields only)
 serviceRouter.put(
-  "/provider/services",
+  "/provider/services*patch/:id",
   jwt.authenticateJwt,
   idHashedBodyValidator,
+  validateExpress,
+  serviceController.updateService,
+);
+// update the full service as long as its a draft
+serviceRouter.put(
+  "/provider/services/update/:id",
+  jwt.authenticateJwt,
+  idHashedParamValidator,
   validateExpress,
   serviceController.updateService,
 );
@@ -67,6 +76,7 @@ serviceRouter.delete(
   jwt.authenticateJwt,
   serviceController.deleteService,
 );
+
 // Pause or resume a service
 serviceRouter.put(
   "/provider/services/:id/status",
