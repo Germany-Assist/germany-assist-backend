@@ -5,13 +5,15 @@ export default function socketAuthMiddleware(socket, next) {
   try {
     const token = socket.handshake.auth?.token;
     if (!token) {
-      throw new AppError(401, "No token provided", true, "No token provided");
+      return next(
+        new AppError(401, "No token provided", true, "No token provided"),
+      );
     }
 
     const decoded = jwt.verifyAccessToken(token); // verify JWT
     socket.auth = decoded; // store user info
-    next();
+    return next();
   } catch (error) {
-    next(error);
+    return next(error);
   }
 }
