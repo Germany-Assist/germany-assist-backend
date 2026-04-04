@@ -24,16 +24,20 @@ class AssetRepository {
   }
 
   // Count assets for limits
-  static async countAssets(filters) {
-    return db.Asset.count({ where: filters });
+  static async countAssets(filters, transaction) {
+    return db.Asset.count({ where: filters, transaction });
   }
 
   // Delete assets
-  static async deleteAssets(filters) {
-    const assets = await db.Asset.findAll({ where: filters });
-    const keys = assets.map((a) => a.key);
-    if (keys.length) await s3Utils.deleteObjects(keys);
-    return db.Asset.destroy({ where: filters });
+  // static async deleteAssets(filters) {
+  //   const assets = await db.Asset.findAll({ where: filters });
+  //   const keys = assets.map((a) => a.key);
+  //   if (keys.length) await s3Utils.deleteObjects(keys);
+  //   return db.Asset.destroy({ where: filters });
+  // }
+
+  static async deleteAssets(options) {
+    return await db.Asset.destroy(options);
   }
 
   static async extractConstrains(type) {

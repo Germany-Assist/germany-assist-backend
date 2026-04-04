@@ -120,15 +120,12 @@ export async function updateService(req, res, next) {
       "service",
       "update",
     );
-
     const updatedService = await serviceServices.updateService(
       serviceId,
       req,
       transaction,
     );
-
     await transaction.commit();
-
     return res.status(200).json({
       message: "Successfully updated service",
       success: true,

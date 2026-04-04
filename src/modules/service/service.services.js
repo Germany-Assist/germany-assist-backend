@@ -26,7 +26,13 @@ const publicAttributes = [
   "totalReviews",
   "requirements",
 ];
-
+const safeJsonParse = (str) => {
+  try {
+    return JSON.parse(str);
+  } catch (error) {
+    return str;
+  }
+};
 const safeJsonParseVariants = (value, fieldName) => {
   if (!value) return null;
   try {
@@ -310,6 +316,19 @@ async function getClientServices(userId) {
 }
 
 async function updateService(serviceId, req, transaction) {
+  // 1. Check if the service exists
+  const service = await serviceRepository.findOne({
+    where: { id: serviceId, serviceProviderId: req.auth.relatedId },
+  });
+  if (!service)
+    throw new AppError(400, "Service not found", false, "Service not found");
+  if (service.status !== "draft" && service.status !== "rejected")
+    throw new AppError(
+      400,
+      "service is not editable",
+      false,
+      "service is not editable",
+    );
   let updateData = {
     title: req.body.title,
     description: req.body.description,
@@ -333,101 +352,42 @@ async function updateService(serviceId, req, transaction) {
   // 3. Update Core Service Data
   await serviceRepository.update(updateData, {
     where: { id: serviceId, serviceProviderId: req.auth.relatedId },
-    transaction,
+    transaction: transaction,
   });
 
   // step one delete the deleted assets
-  console.log(req.body);
-  console.log(req.files);
-  if (req.body.existingAssets) {
-    console.log(req.body);
-
-    console.log(req.body.existingAssets);
+  const deletedAssets = safeJsonParse(req.body.deletedAssets);
+  if (deletedAssets) {
+    await AssetRepository.deleteAssets({
+      where: {
+        name: { [Op.in]: deletedAssets },
+        serviceProviderId: req.auth.relatedId,
+      },
+      transaction: transaction,
+    });
   }
-  // console.log(req.files);
-  // console.log(req.body.imageKeys);
+  // step two upload the new assets only if they exist
+  const files = req.files || [];
+  const imageKeys = req.body.imageKeys || [];
+  if (files.length !== imageKeys.length)
+    throw new Error("Files and imageKeys length mismatch");
 
-  // step two upload the new assets
-  // const files = req.files || [];
-  // const imageKeys = req.body.imageKeys || [];
-  // if (files.length !== imageKeys.length)
-  //   throw new Error("Files and imageKeys length mismatch");
+  const groupedFiles = {};
+  files.forEach((file, index) => {
+    const type = imageKeys[index];
+    if (!groupedFiles[type]) groupedFiles[type] = [];
+    groupedFiles[type].push(file);
+  });
 
-  // const groupedFiles = {};
-  // files.forEach((file, index) => {
-  //   const type = imageKeys[index];
-  //   if (!groupedFiles[type]) groupedFiles[type] = [];
-  //   groupedFiles[type].push(file);
-  // });
-
-  // for (const [type, files] of Object.entries(groupedFiles)) {
-  //   await AssetService.upload({
-  //     type,
-  //     files,
-  //     auth: req.auth,
-  //     params: { id: hashIdUtil.hashIdEncode(service.id) },
-  //     transaction,
-  //   });
-  // }
-  throw new AppError(500, "Not implemented");
-  // // --- ASSET RECONCILIATION ---
-
-  // // A. Identify "Kept" Assets from Frontend
-  // const rawExisting = req.body.existingAssets || [];
-  // const incomingExisting = Array.isArray(rawExisting)
-  //   ? rawExisting
-  //   : [rawExisting];
-
-  // // Extract URLs to compare (Frontend sends objects {url: "...", key: "..."})
-  // const keptUrls = incomingExisting.map((asset) => {
-  //   const parsed = typeof asset === "string" ? JSON.parse(asset) : asset;
-  //   return parsed.url;
-  // });
-
-  // // B. Find current assets and identify the ones to DELETE
-  // const currentAssets = await AssetRepository.findAllByServiceId(serviceId);
-  // const assetsToDelete = currentAssets.filter(
-  //   (asset) => !keptUrls.includes(asset.url),
-  // );
-
-  // // C. DELETE FROM DB FIRST (To free up the count for AssetService.validateFiles)
-  // if (assetsToDelete.length > 0) {
-  //   const idsToDelete = assetsToDelete.map((a) => a.id);
-  //   await AssetRepository.deleteByIds(idsToDelete, transaction);
-  // }
-
-  // // D. UPLOAD NEW ASSETS (AssetService now sees the "free slots")
-  // const files = req.files || [];
-  // const imageKeys = req.body.imageKeys || [];
-
-  // if (files.length > 0) {
-  //   const groupedFiles = {};
-  //   files.forEach((file, index) => {
-  //     const type = imageKeys[index];
-  //     if (!groupedFiles[type]) groupedFiles[type] = [];
-  //     groupedFiles[type].push(file);
-  //   });
-
-  //   for (const [type, filesGroup] of Object.entries(groupedFiles)) {
-  //     await AssetService.upload({
-  //       type,
-  //       files: filesGroup,
-  //       auth: req.auth,
-  //       params: { id: hashIdUtil.hashIdEncode(serviceId) },
-  //       transaction,
-  //     });
-  //   }
-  // }
-  // // 4. Trigger Notification & Return
-  // notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.UPDATED, {
-  //   serviceId: serviceId,
-  // });
-
-  // Return the assets slated for S3 deletion so the controller can clean them up post-commit
-  return {
-    // serviceId,
-    // deletedS3Keys: assetsToDelete.map((a) => a.url),
-  };
+  for (const [type, files] of Object.entries(groupedFiles)) {
+    await AssetService.upload({
+      type,
+      files,
+      auth: req.auth,
+      params: { id: hashIdUtil.hashIdEncode(service.id) },
+      transaction,
+    });
+  }
 }
 
 async function deleteService(id) {

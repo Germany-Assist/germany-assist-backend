@@ -42,7 +42,13 @@ class AssetService {
     );
 
     // 3️⃣ Validate files against count & size
-    await this.validateFiles(type, files, searchFilters, constraints);
+    await this.validateFiles(
+      type,
+      files,
+      searchFilters,
+      constraints,
+      transaction,
+    );
 
     // 4️⃣ Format files depending on media type
     let filesToUpload;
@@ -115,9 +121,18 @@ class AssetService {
   }
 
   // Validate file sizes and upload limits
-  static async validateFiles(type, files, searchFilters, constraints) {
+  static async validateFiles(
+    type,
+    files,
+    searchFilters,
+    constraints,
+    transaction,
+  ) {
     const totalFiles = files.length;
-    const currentCount = await AssetRepository.countAssets(searchFilters);
+    const currentCount = await AssetRepository.countAssets(
+      searchFilters,
+      transaction,
+    );
     if (
       constraints.limit !== "*" &&
       currentCount + totalFiles > constraints.limit
