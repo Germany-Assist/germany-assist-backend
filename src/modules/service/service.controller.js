@@ -3,6 +3,7 @@ import hashIdUtil from "../../utils/hashId.util.js";
 import authUtils from "../../utils/authorize.util.js";
 import { sequelize } from "../../configs/database.js";
 import serviceMappers from "./service.mappers.js";
+import { AppError } from "../../utils/error.class.js";
 
 export async function createService(req, res, next) {
   const transaction = await sequelize.transaction();
@@ -108,30 +109,37 @@ export async function getAllServicesSP(req, res, next) {
   }
 }
 export async function updateService(req, res, next) {
+  const transaction = await sequelize.transaction();
   try {
-    const user = await authUtils.checkRoleAndPermission(
+    const serviceId = hashIdUtil.hashIdDecode(req.params.id);
+
+    await authUtils.checkRoleAndPermission(
       req.auth,
-      ["admin", "service_provider_root", "service_provider_rep", "super_admin"],
+      ["service_provider_root", "service_provider_rep"],
       true,
       "service",
       "update",
     );
-    const owner = await authUtils.checkOwnership(
-      req.body.id,
-      req.auth.relatedId,
-      "Service",
+
+    const updatedService = await serviceServices.updateService(
+      serviceId,
+      req,
+      transaction,
     );
-    const allowedFields = ["description"];
-    let updateFields = {};
-    allowedFields.forEach((i) => {
-      if (req.body[i]) updateFields[i] = req.body[i];
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      message: "Successfully updated service",
+      success: true,
     });
-    await serviceServices.updateService(
-      hashIdUtil.hashIdDecode(req.body.id),
-      updateFields,
-    );
-    res.send({ success: true, message: "Service Updated" });
   } catch (error) {
+    if (req.files) {
+      req.files.forEach((file) => {
+        file.stream?.resume();
+      });
+    }
+    await transaction.rollback();
     next(error);
   }
 }
@@ -149,6 +157,7 @@ export async function deleteService(req, res, next) {
       req.auth.relatedId,
       "Service",
     );
+
     await serviceServices.deleteService(hashIdUtil.hashIdDecode(req.params.id));
     res.send({ success: true, message: "Service Deleted Successfully" });
   } catch (error) {
@@ -211,7 +220,6 @@ export async function pauseResumeService(req, res, next) {
     next(error);
   }
 }
-
 export async function addToFavorite(req, res, next) {
   try {
     const { id: serviceId } = req.params;

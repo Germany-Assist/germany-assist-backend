@@ -39,6 +39,10 @@ const serviceRepository = {
   async findAll(options) {
     return await db.Service.findAll(options);
   },
+
+  async update(data, options) {
+    return await db.Service.update(data, options);
+  },
 };
 
 export default serviceRepository;

@@ -54,7 +54,7 @@ serviceRouter.get(
 //Mark as to do after finalization of onetimes and timelines
 // Update a service (allowed fields only)
 serviceRouter.put(
-  "/provider/services*patch/:id",
+  "/provider/services/patch/:id",
   jwt.authenticateJwt,
   idHashedBodyValidator,
   validateExpress,
@@ -63,8 +63,10 @@ serviceRouter.put(
 // update the full service as long as its a draft
 serviceRouter.put(
   "/provider/services/update/:id",
+  multerUpload.array("images", 4),
   jwt.authenticateJwt,
   idHashedParamValidator,
+  createServiceValidator,
   validateExpress,
   serviceController.updateService,
 );
