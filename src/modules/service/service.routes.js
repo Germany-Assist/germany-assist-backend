@@ -13,6 +13,8 @@ import {
 import timelineRouter from "../timeline/timeline.routes.js";
 import variantRouter from "../variant/variant.routes.js";
 import multerUpload from "../../configs/multer.config.js";
+import { variantsValidator } from "../variant/variant.validator.js";
+import { timelinesValidator } from "../timeline/timeline.validator.js";
 const serviceRouter = express.Router();
 serviceRouter.use("/timeline", timelineRouter);
 serviceRouter.use("/variant", variantRouter);
@@ -67,6 +69,8 @@ serviceRouter.put(
   jwt.authenticateJwt,
   idHashedParamValidator,
   createServiceValidator,
+  timelinesValidator,
+  variantsValidator,
   validateExpress,
   serviceController.updateService,
 );

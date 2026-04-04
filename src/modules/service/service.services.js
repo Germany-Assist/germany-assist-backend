@@ -13,6 +13,8 @@ import {
 import notificationQueue from "../../jobs/queues/notification.queue.js";
 import AssetRepository from "../assets/assets.repository.js";
 import { app } from "../../app.js";
+import timelineRepository from "../timeline/timeline.repository.js";
+import VariantRepository from "../variant/variant.repository.js";
 
 const publicAttributes = [
   "id",
@@ -33,42 +35,85 @@ const safeJsonParse = (str) => {
     return str;
   }
 };
-const safeJsonParseVariants = (value, fieldName) => {
+const safeJsonParseVariants = (value, serviceId = null) => {
   if (!value) return null;
-  try {
-    const variants = JSON.parse(value);
-    // im just white listing the inputs
-    // TODO: add validation
-    return variants.map((i) => ({
-      label: i.label,
-      price: i.price,
-      deliveryTime: i.deliveryTime,
-    }));
-    return JSON.parse(value);
-  } catch {
-    throw new AppError(400, `Invalid JSON in ${fieldName}`);
+  // important i move the parsing of the data to the validator and not here
+  if (!Array.isArray(value)) {
+    throw new AppError(
+      400,
+      `Variants must be an array`,
+      false,
+      `Variants must be an array`,
+    );
   }
-};
-const safeJsonParseTimelines = (value, fieldName) => {
-  if (!value) return null;
+
   try {
-    const timelines = JSON.parse(value);
-    // im just white listing the inputs
-    // TODO: add validation
-    return timelines.map((i) => ({
-      label: i.label,
-      price: i.price,
-      startDate: i.startDate,
-      deadlineDate: i.deadlineDate,
-      endDate: i.endDate,
-      maxParticipants: i.maxParticipants,
-    }));
-    return JSON.parse(value);
-  } catch {
-    throw new AppError(400, `Invalid JSON in ${fieldName}`);
+    return value.map((i) => {
+      const variant = {
+        label: i.label,
+        price: Number(i.price) || 0,
+        deliveryTime: parseInt(i.deliveryTime) || 0,
+      };
+      // Only inject serviceId if we have one (Update mode)
+      const finalId = i.serviceId || serviceId;
+      if (finalId) {
+        variant.serviceId = finalId;
+      }
+
+      return variant;
+    });
+  } catch (err) {
+    // This catches mapping crashes, but the Validator should prevent this anyway :D
+    throw new AppError(
+      429,
+      `Invalid data structure in variants`,
+      false,
+      "Invalid data structure in variants",
+    );
   }
 };
 
+const safeJsonParseTimelines = (value, serviceId = null) => {
+  if (!value) return null;
+  // important i move the parsing of the data to the validator and not here
+  // im just white listing the inputs
+  if (!Array.isArray(value)) {
+    throw new AppError(
+      429,
+      `Timelines must be an array`,
+      false,
+      "Timelines must be an array",
+    );
+  }
+
+  try {
+    return value.map((i) => {
+      const timeline = {
+        label: i.label,
+        price: Number(i.price) || 0,
+        startDate: i.startDate,
+        deadlineDate: i.deadlineDate,
+        endDate: i.endDate,
+        maxParticipants: parseInt(i.maxParticipants) || 1,
+      };
+
+      // Only inject serviceId if we have one
+      const finalId = i.serviceId || serviceId;
+      if (finalId) {
+        timeline.serviceId = finalId;
+      }
+
+      return timeline;
+    });
+  } catch (err) {
+    throw new AppError(
+      429,
+      `Invalid data structure in timelines`,
+      false,
+      "Invalid data structure in timelines",
+    );
+  }
+};
 /* ---------------- Main Services ---------------- */
 
 async function createService(req, transaction) {
@@ -91,7 +136,14 @@ async function createService(req, transaction) {
   }
   if (!serviceData.variants && !serviceData.timelines)
     throw new AppError(422, "invalid option for timeline or variants");
-
+  if (serviceData.variants && serviceData.timelines) {
+    throw new AppError(
+      422,
+      "invalid option for timeline or variants",
+      false,
+      "service cant be both",
+    );
+  }
   const service = await serviceRepository.createService(
     serviceData,
     transaction,
@@ -341,11 +393,11 @@ async function updateService(serviceId, req, transaction) {
   if (updateData.type === SERVICE_TYPES.timeline) {
     updateData.timelines = safeJsonParseTimelines(
       req.body.timelines,
-      "timelines",
+      service.id,
     );
     updateData.variants = null;
   } else if (updateData.type === SERVICE_TYPES.oneTime) {
-    updateData.variants = safeJsonParseVariants(req.body.variants, "variants");
+    updateData.variants = safeJsonParseVariants(req.body.variants, service.id);
     updateData.timelines = null;
   }
 
@@ -354,7 +406,32 @@ async function updateService(serviceId, req, transaction) {
     where: { id: serviceId, serviceProviderId: req.auth.relatedId },
     transaction: transaction,
   });
+  // i should delete all the old options and then add the new ones but at this stage i dont know its eather a timeline or a variant
+  // so im going to delete all the old options and then add the new ones
 
+  // 4.handling the options
+  // a. delete all the old options
+  await timelineRepository.deleteTimelines({
+    where: { serviceId: service.id },
+    transaction: transaction,
+  });
+  await VariantRepository.deleteVariants({
+    where: { serviceId: service.id },
+    transaction: transaction,
+  });
+  // b. add the new options
+  if (updateData.type === SERVICE_TYPES.timeline) {
+    await timelineRepository.bulkCreateTimelines(
+      updateData.timelines,
+      transaction,
+    );
+  } else if (updateData.type === SERVICE_TYPES.oneTime) {
+    await VariantRepository.bulkCreateVariants(
+      updateData.variants,
+      transaction,
+    );
+  }
+  // 5. Update Assets
   // step one delete the deleted assets
   const deletedAssets = safeJsonParse(req.body.deletedAssets);
   if (deletedAssets) {
