@@ -178,6 +178,7 @@ async function createService(req, transaction) {
   return service;
 }
 
+// this really important controller basically all services and roles and even timelines and variants uses it
 async function getAllServices(filters, authority) {
   const page = parseInt(filters.page) || 1;
   const limit = parseInt(filters.limit) || 10;
@@ -211,14 +212,14 @@ async function getAllServices(filters, authority) {
     {
       model: db.Timeline,
       required: false,
+      where: { isArchived: false },
       as: "timelines",
       attributes: [
         "id",
+        "label",
         "price",
         "startDate",
         "endDate",
-        "label",
-        "isArchived",
         "deadlineDate",
         "maxParticipants",
       ],
@@ -227,13 +228,17 @@ async function getAllServices(filters, authority) {
       model: db.Variant,
       required: false,
       as: "variants",
-      attributes: ["id", "price", "label", "isArchived", "deliveryTime"],
+      // offers will be excluded
+      where: { isOffer: false, isArchived: false },
+      attributes: ["id", "price", "label", "deliveryTime"],
     },
     { model: db.Asset, as: "image", attributes: ["url"] },
     { model: db.ServiceProvider, attributes: ["name"] },
     {
+      // i will add filtersation
       model: db.Subcategory,
-      attributes: ["title"],
+      attributes: ["title", "id", "label"],
+      include: [{ model: db.Category, attributes: ["title", "id", "label"] }],
       ...(filters.category && { where: { title: filters.category } }),
     },
   ];
@@ -275,7 +280,14 @@ async function getServiceByIdPublic(id) {
         as: "variants",
         required: false,
       },
-      { model: db.Subcategory, attributes: ["title", "id", "label"] },
+      {
+        model: db.Subcategory,
+        attributes: ["title", "id", "label"],
+        include: {
+          model: db.Category,
+          attributes: ["title", "id", "label"],
+        },
+      },
       {
         model: db.Review,
         attributes: ["body", "rating"],
@@ -344,7 +356,6 @@ async function getServiceProfileForAdminAndSP(id, SPID) {
   });
 
   if (!service) throw new AppError(404, "Service not found");
-  await service.increment("views");
   return service.toJSON();
 }
 

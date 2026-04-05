@@ -1,7 +1,61 @@
 import { Op, where } from "sequelize";
 import db from "../../database/index.js";
 import { AppError } from "../../utils/error.class.js";
+async function getTimelineForProvider({
+  relatedId,
+  timelineId,
+  pinned = false,
+  page = 0,
+}) {
+  const where = {};
+  if (pinned) where.isPinned = true;
 
+  const timeline = await db.Timeline.findOne({
+    attributes: ["id"],
+    where: { id: timelineId },
+    include: [
+      {
+        model: db.Post,
+        attributes: ["id", "description"],
+        where,
+        limit: pinned ? 3 : 10,
+        offset: pinned ? 0 : page * 10,
+        include: [
+          {
+            model: db.Asset,
+            attributes: ["url", "thumb", "key", "mediaType", "name"],
+          },
+        ],
+        order: [["createdAt", "DESC"]],
+      },
+      {
+        model: db.Service,
+        attributes: [],
+        required: true,
+        where: { serviceProviderId: relatedId },
+      },
+    ],
+  });
+
+  if (!timeline)
+    throw new AppError(
+      404,
+      "failed to find the timeline in your orders",
+      true,
+      "failed to find the timeline in your orders",
+    );
+
+  const timelineJson = timeline.toJSON();
+
+  for (const post of timelineJson.Posts) {
+    const count = await db.Comment.count({
+      where: { postId: post.id },
+    });
+    post.commentsCount = count;
+  }
+
+  return timelineJson;
+}
 async function getTimelineForClient({
   userId,
   timelineId,
@@ -104,5 +158,6 @@ const timelineRepository = {
   createNewTimeline,
   authorizeTimelineCreation,
   bulkCreateTimelines,
+  getTimelineForProvider,
 };
 export default timelineRepository;

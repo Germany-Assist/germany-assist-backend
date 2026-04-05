@@ -1,5 +1,11 @@
 import { body } from "express-validator";
-
+export const variantValidator = [
+  body("label").trim().isLength({ min: 3 }).withMessage("Label too short"),
+  body("price").isFloat({ min: 1 }).withMessage("Min price is 1"),
+  body("deliveryTime")
+    .isInt({ min: 1 })
+    .withMessage("Delivery time must be days (integer)"),
+];
 export const variantsValidator = [
   body("variants")
     .optional()
