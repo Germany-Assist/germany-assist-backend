@@ -52,6 +52,7 @@ export async function googleAuth(body) {
             url: payload.picture,
             size: 0,
             confirmed: true,
+            thumb: false,
           },
           isVerified: true,
           googleId: payload.sub,
