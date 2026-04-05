@@ -20,8 +20,8 @@ async function handleServiceCreated({ serviceId }) {
     ],
   });
 
-  if (!service) {
-    throw new Error(`Service ${serviceId} not found`);
+  if (!service || !service.ServiceProvider) {
+    throw new Error(`Service ${serviceId} or its ServiceProvider not found`);
   }
 
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
@@ -83,7 +83,7 @@ async function handleServiceCreated({ serviceId }) {
       id: hashIdUtil.hashIdEncode(adminNotification.id),
       message: providerMessage,
     });
-    emailQueue.add("sendEmail", {
+    await emailQueue.add("sendEmail", {
       to: service.ServiceProvider.email,
       subject: "Service Created - Germany Assist",
       html: providerEmailHtml,
@@ -91,7 +91,7 @@ async function handleServiceCreated({ serviceId }) {
 
     return { success: true };
   } catch (error) {
-    if (!transaction.finished) {
+    if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
     errorLogger("Failed handling service created:", error);

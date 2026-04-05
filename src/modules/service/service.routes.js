@@ -15,7 +15,9 @@ import variantRouter from "../variant/variant.routes.js";
 import multerUpload from "../../configs/multer.config.js";
 import { variantsValidator } from "../variant/variant.validator.js";
 import { timelinesValidator } from "../timeline/timeline.validator.js";
+
 const serviceRouter = express.Router();
+
 serviceRouter.use("/timeline", timelineRouter);
 serviceRouter.use("/variant", variantRouter);
 

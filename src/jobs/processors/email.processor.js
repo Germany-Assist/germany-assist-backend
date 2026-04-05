@@ -6,12 +6,10 @@ async function emailProcessor(job) {
   try {
     await emailService.sendEmail(data);
   } catch (error) {
-    errorLogger({
+    errorLogger(error, {
       jobId: id,
       eventName: name,
       userId: data?.userId,
-      error,
-      stack: error.stack,
     });
     throw error;
   }

@@ -22,10 +22,10 @@ if (NODE_ENV !== "test") {
       process.on("SIGINT", () => shutdown("SIGINT", server, io));
       process.on("SIGTERM", () => shutdown("SIGTERM", server, io));
       process.on("uncaughtException", (e) =>
-        shutdown(`UncaughtException: ${e}`, server, io),
+        shutdown("uncaughtException", server, io, e),
       );
       process.on("unhandledRejection", (r) =>
-        shutdown(`UnhandledRejection: ${r}`, server, io),
+        shutdown("unhandledRejection", server, io, r),
       );
     } catch (err) {
       errorLogger(err);

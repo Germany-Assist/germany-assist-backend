@@ -7,7 +7,9 @@ import { AppError } from "../../../../utils/error.class.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import emailQueue from "../../../../jobs/queues/email.queue.js";
 
-//on any update
+const EMAIL_SUBJECT = "Dispute Updated - Germany Assist";
+
+// on any update
 export default async function handleDisputeUpdated({
   disputeId,
   status,
@@ -16,108 +18,130 @@ export default async function handleDisputeUpdated({
   const transaction = await sequelize.transaction();
 
   try {
-    const hashedDisputeId = hashIdUtil.hashIdEncode(disputeId);
     const dispute = await db.Dispute.findOne({
       where: { id: disputeId },
+      transaction, // ✅ important
       include: [
         { model: db.Order, attributes: ["id"] },
-        { model: db.User, attributes: ["id", "email"] },
-        { model: db.ServiceProvider, attributes: ["id", "email", "name"] },
+        { model: db.User, attributes: ["id", "email", "name"] },
+        {
+          model: db.ServiceProvider,
+          attributes: ["id", "email", "name"],
+        },
       ],
     });
+
+    const hashedDisputeId = hashIdUtil.hashIdEncode(disputeId);
 
     if (!dispute) {
       throw new AppError(404, `Dispute ${hashedDisputeId} not found`, true);
     }
 
-    const hashedOrderId = hashIdUtil.hashIdEncode(dispute.Order.id);
-    const providerMessage = `Update for dispute ${hashedDisputeId} for order "${hashedOrderId} the dispute was ${status} ${resolution ? `with resolution ${resolution}` : ""}.`;
+    // ✅ relation safety
+    if (!dispute.Order || !dispute.User || !dispute.ServiceProvider) {
+      throw new AppError(500, "Dispute relations missing", true);
+    }
 
+    const hashedOrderId = hashIdUtil.hashIdEncode(dispute.Order.id);
+
+    // ✅ fixed message formatting bug (you had missing quote)
+    const message = `Update for dispute ${hashedDisputeId} for order "${hashedOrderId}". The dispute was ${status}${
+      resolution ? ` with resolution "${resolution}"` : ""
+    }.`;
+
+    // ✅ emails
     const userEmailHtml = disputeEmail({
       title: `Dispute Update ${status}`,
-      recipientName: dispute.User.email,
-      message: providerMessage,
+      recipientName: dispute.User.name || dispute.User.email,
+      message,
       orderId: hashedOrderId,
       disputeId: hashedDisputeId,
     });
 
     const providerEmailHtml = disputeEmail({
       title: `Dispute Update ${status}`,
-      recipientName: dispute.ServiceProvider.name || dispute.ServiceProvider.email,
-      message: providerMessage,
+      recipientName:
+        dispute.ServiceProvider.name || dispute.ServiceProvider.email,
+      message,
       orderId: hashedOrderId,
       disputeId: hashedDisputeId,
     });
 
-    const providerNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        serviceProviderId: dispute.ServiceProvider.id,
-      },
-      { transaction },
-    );
+    // ✅ DRY notifications
+    const createNotification = (data) =>
+      db.Notification.create(data, { transaction });
 
-    const adminNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        isAdmin: true,
-      },
-      { transaction },
-    );
+    const baseNotification = {
+      message,
+      url: "",
+      type: "info",
+      metadata: { disputeId: dispute.id },
+    };
 
-    const userNotification = await db.Notification.create(
-      {
-        message: providerMessage,
-        url: "",
-        type: "info",
-        userId: dispute.User.id,
-      },
-      { transaction },
-    );
+    const [providerNotification, adminNotification, userNotification] =
+      await Promise.all([
+        createNotification({
+          ...baseNotification,
+          serviceProviderId: dispute.ServiceProvider.id,
+        }),
+        createNotification({
+          ...baseNotification,
+          isAdmin: true,
+        }),
+        createNotification({
+          ...baseNotification,
+          userId: dispute.User.id,
+        }),
+      ]);
 
+    // ✅ commit before side effects
     await transaction.commit();
 
+    // ✅ sockets
     socketNotificationServices.sendSocketNotificationToProvider(
       dispute.ServiceProvider.id,
       {
         id: hashIdUtil.hashIdEncode(providerNotification.id),
-        message: providerMessage,
+        message,
       },
     );
 
     socketNotificationServices.sendSocketNotificationAdmin({
       id: hashIdUtil.hashIdEncode(adminNotification.id),
-      message: providerMessage,
+      message,
     });
 
     socketNotificationServices.sendSocketNotification(dispute.User.id, {
       id: hashIdUtil.hashIdEncode(userNotification.id),
-      message: providerMessage,
+      message,
     });
 
-    // Queue emails
-    emailQueue.add("sendEmail", {
-      to: dispute.ServiceProvider.email,
-      subject: "Dispute Updated - Germany Assist",
-      html: providerEmailHtml,
-    });
-    emailQueue.add("sendEmail", {
-      to: dispute.User.email,
-      subject: "Dispute Updated - Germany Assist",
-      html: userEmailHtml,
-    });
+    // ✅ queue emails
+    await Promise.all([
+      emailQueue.add("sendEmail", {
+        to: dispute.ServiceProvider.email,
+        subject: EMAIL_SUBJECT,
+        html: providerEmailHtml,
+      }),
+      emailQueue.add("sendEmail", {
+        to: dispute.User.email,
+        subject: EMAIL_SUBJECT,
+        html: userEmailHtml,
+      }),
+    ]);
 
-  } catch (externalError) {
-    if (!transaction.finished) {
-      await transaction.rollback();
+    return { success: true };
+  } catch (error) {
+    // ✅ safe rollback
+    try {
+      if (transaction && !transaction.finished) {
+        await transaction.rollback();
+      }
+    } catch (rollbackError) {
+      errorLogger("Rollback failed:", rollbackError);
     }
-    errorLogger("Failed handling dispute update:", externalError);
-    throw externalError;
-  }
 
-  return { success: true };
+    errorLogger("Failed handling dispute update:", error);
+    throw error;
+  }
 }

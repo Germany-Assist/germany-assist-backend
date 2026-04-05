@@ -7,7 +7,7 @@ import {
   EMAIL_USER,
   SEND_EMAILS,
 } from "../../configs/email.config.js";
-import { NODE_ENV } from "../../configs/serverConfig.js";
+import { NODE_ENV, SEND_EMAILS } from "../../configs/serverConfig.js";
 
 class EmailService {
   constructor() {

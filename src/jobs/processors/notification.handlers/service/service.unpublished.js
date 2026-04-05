@@ -19,8 +19,8 @@ async function handleServiceUnpublished({ serviceId }) {
     ],
   });
 
-  if (!service) {
-    throw new Error(`Service ${serviceId} not found`);
+  if (!service || !service.ServiceProvider) {
+    throw new Error(`Service ${serviceId} or its ServiceProvider not found`);
   }
 
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
@@ -85,7 +85,7 @@ async function handleServiceUnpublished({ serviceId }) {
     });
 
     // Queue email
-    emailQueue.add("sendEmail", {
+    await emailQueue.add("sendEmail", {
       to: service.ServiceProvider.email,
       subject: "Service Unpublished - Germany Assist",
       html: providerEmailHtml,
@@ -93,7 +93,7 @@ async function handleServiceUnpublished({ serviceId }) {
 
     return { success: true };
   } catch (error) {
-    if (!transaction.finished) {
+    if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
     errorLogger("Failed handling service unpublished:", error);

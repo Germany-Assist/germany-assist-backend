@@ -22,8 +22,8 @@ async function handleOrderAccepted({ orderId }) {
     ],
   });
 
-  if (!order) {
-    throw new Error(`Order ${orderId} not found`);
+  if (!order || !order.User || !order.ServiceProvider || !order.Service) {
+    throw new Error(`Order ${orderId} or its relations (User/ServiceProvider/Service) not found`);
   }
 
   const hashedOrderId = hashIdUtil.hashIdEncode(orderId);
@@ -97,24 +97,25 @@ async function handleOrderAccepted({ orderId }) {
     );
 
     // Queue emails
-    emailQueue.add("sendEmail", {
-      to: order.ServiceProvider.email,
-      subject: "Order Accepted - Germany Assist",
-      html: providerEmailHtml,
-    });
-    emailQueue.add("sendEmail", {
-      to: order.User.email,
-      subject: "Your Accepted - Germany Assist",
-      html: userEmailHtml,
-    });
-
-  } catch (externalError) {
-    if (!transaction.finished) {
+    await Promise.all([
+      emailQueue.add("sendEmail", {
+        to: order.ServiceProvider.email,
+        subject: "Order Accepted - Germany Assist",
+        html: providerEmailHtml,
+      }),
+      emailQueue.add("sendEmail", {
+        to: order.User.email,
+        subject: "Your Accepted - Germany Assist",
+        html: userEmailHtml,
+      }),
+    ]);
+    } catch (externalError) {
+    if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
     errorLogger("Failed handling order accepted:", externalError);
     throw externalError;
-  }
+    }
 
   return { success: true };
 }

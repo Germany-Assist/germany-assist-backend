@@ -8,6 +8,22 @@ class AssetRepository {
     return s3Utils.uploadFilesToS3(files);
   }
 
+  static async findProfileImageId() {
+    const x = await db.User.findOne({
+      attributes: ["id"],
+      include: [
+        {
+          model: db.Asset,
+          required: true,
+          as: "profilePicture",
+          attributes: ["id"],
+        },
+      ],
+    });
+    if (!x) return null;
+    const repose = x.get({ plain: true });
+    return repose.profilePicture.map((i) => i.id);
+  }
   // Save asset metadata to DB
   static async saveAssets(assets, transaction) {
     return db.Asset.bulkCreate(assets, { transaction });
@@ -25,7 +41,10 @@ class AssetRepository {
 
   // Count assets for limits
   static async countAssets(filters, transaction) {
-    return db.Asset.count({ where: filters, transaction });
+    return db.Asset.count({
+      where: { ...filters, confirmed: true },
+      transaction,
+    });
   }
 
   // Delete assets
@@ -47,6 +66,13 @@ class AssetRepository {
     });
     if (!con) throw new AppError(500, "invalid constrain key type", false);
     return con;
+  }
+
+  static async markAsUnconfirmed(assetIds, transaction) {
+    return db.Asset.update(
+      { confirmed: false },
+      { where: { id: assetIds }, transaction },
+    );
   }
 }
 

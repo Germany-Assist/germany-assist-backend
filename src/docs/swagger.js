@@ -1,13 +1,13 @@
 import swaggerUi from "swagger-ui-express";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import path from "path";
-
+import { SUB_DOMAIN } from "../configs/serverConfig.js";
 export default async function setupSwagger(app) {
   try {
     const rootPath = path.join(process.cwd(), "src/openapi/openapi.yaml");
     const swaggerDocument = await SwaggerParser.bundle(rootPath);
     swaggerDocument.servers = [
-      { url: "http://www.germany-assist.com/staging/backend/api" },
+      { url: `http://${SUB_DOMAIN}.germany-assist.com/backend/api` },
       { url: "/api" },
     ];
     app.use(

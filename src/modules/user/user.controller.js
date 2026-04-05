@@ -49,10 +49,21 @@ export async function getReps(req, res, next) {
     next(error);
   }
 }
-
+export async function updateImage(req, res, next) {
+  try {
+    const result = await userServices.updateImage(req.auth, req.file);
+    res.send({
+      success: true,
+      message: "image updated successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 const userController = {
   getReps,
   getAllUsers,
+  updateImage,
   createAdminController,
   createRepController,
   createClientController,
