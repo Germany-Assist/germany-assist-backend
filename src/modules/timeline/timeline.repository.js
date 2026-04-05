@@ -90,10 +90,19 @@ async function createNewTimeline(data) {
   const newTimeline = await db.Timeline.create(data);
   return newTimeline;
 }
+
+async function deleteTimelines(options) {
+  return await db.Timeline.destroy(options);
+}
+async function bulkCreateTimelines(timelines, transaction) {
+  return await db.Timeline.bulkCreate(timelines, { transaction });
+}
 const timelineRepository = {
+  deleteTimelines,
   getTimelineForClient,
   archiveTimeline,
   createNewTimeline,
   authorizeTimelineCreation,
+  bulkCreateTimelines,
 };
 export default timelineRepository;

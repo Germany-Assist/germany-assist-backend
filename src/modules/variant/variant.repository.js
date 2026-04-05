@@ -26,9 +26,17 @@ async function createNewVariant(data) {
   const newVariant = await db.Variant.create(data);
   return newVariant;
 }
+async function deleteVariants(options) {
+  return await db.Variant.destroy(options);
+}
+async function bulkCreateVariants(data, transaction) {
+  await db.Variant.bulkCreate(data, { transaction });
+}
 const VariantRepository = {
+  deleteVariants,
   archiveVariant,
   createNewVariant,
+  bulkCreateVariants,
   authorizeVariantCreation,
 };
 export default VariantRepository;

@@ -8,12 +8,6 @@ const encodeId = (id) => hashIdUtil.hashIdEncode(id);
 const resolveImageUrl = async (url) => {
   return url ? await generateDownloadUrl(url) : undefined;
 };
-const calculateLevel = ({ approved, published, rejected }) => {
-  if (approved && published) return "ready";
-  if (approved && !published) return "accepted";
-  if (!approved && !rejected) return "pending";
-  if (rejected) return "alert";
-};
 
 const timelinesFormatter = (timelines) => {
   if (!timelines || timelines.length < 1) return undefined;
@@ -89,15 +83,15 @@ export const sanitizeServices = async (services = []) => {
       rating: service.rating,
       totalReviews: service.totalReviews,
       type: service.type,
+      isPaused: service.isPaused,
+      rejectionReason: service.rejectionReason,
       category: service.Subcategory.title,
       serviceProvider: service.ServiceProvider.name,
       image: await resolveImageUrl(service.image[0]?.url),
       timelines: timelinesFormatter(service.timelines),
       variants: variantsFormatter(service.variants),
-      published: service.published,
-      approved: service.approved,
-      rejected: service.rejected,
-      level: calculateLevel(service),
+      status: service.status,
+      isPaused: service.isPaused,
     })),
   );
 };
@@ -131,6 +125,8 @@ export const sanitizeServiceProfile = async (service) => {
             startDate,
             endDate,
             isArchived,
+            deadlineDate,
+            maxParticipants,
           }) => ({
             id: encodeId(id),
             serviceId: encodeId(serviceId),
@@ -139,18 +135,23 @@ export const sanitizeServiceProfile = async (service) => {
             startDate,
             endDate,
             isArchived,
+            deadlineDate,
+            maxParticipants,
           }),
         ) ?? [])
       : undefined;
 
   const variants =
     service.type === "oneTime"
-      ? (service.variants?.map(({ id, serviceId, label, price }) => ({
-          id: encodeId(id),
-          serviceId: encodeId(serviceId),
-          label,
-          price: parseFloat(price),
-        })) ?? [])
+      ? (service.variants?.map(
+          ({ id, serviceId, label, price, deliveryTime }) => ({
+            id: encodeId(id),
+            serviceId: encodeId(serviceId),
+            label,
+            deliveryTime,
+            price: parseFloat(price),
+          }),
+        ) ?? [])
       : undefined;
 
   return {
@@ -162,14 +163,20 @@ export const sanitizeServiceProfile = async (service) => {
     views: service.views,
     rating: service.rating,
     totalReviews: service.totalReviews,
-
+    isPaused: service.isPaused,
+    rejectionReason: service.rejectionReason,
+    requirements: service.requirements,
     /* -------- relations -------- */
     category: {
+      id: encodeId(service.Subcategory.Category.id),
+      title: service.Subcategory.Category.title,
+      label: service.Subcategory.Category.label,
+    },
+    subCategory: {
       id: encodeId(service.Subcategory.id),
       title: service.Subcategory.title,
       label: service.Subcategory.label,
     },
-
     serviceProvider: {
       id: service.ServiceProvider.id,
       name: service.ServiceProvider.name,

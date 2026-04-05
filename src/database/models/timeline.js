@@ -33,6 +33,7 @@ Timeline.init(
         },
       },
     },
+
     price: {
       type: DataTypes.FLOAT,
       allowNull: false,
@@ -55,7 +56,7 @@ Timeline.init(
         isDate: { msg: "deadLine data should be valid date" },
       },
     },
-    limit: {
+    maxParticipants: {
       type: DataTypes.INTEGER,
       validate: {
         isInt: { msg: "Limit must be an integer" },

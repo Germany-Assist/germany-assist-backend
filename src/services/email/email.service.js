@@ -5,6 +5,7 @@ import {
   EMAIL_PASS,
   EMAIL_SMTP_PORT,
   EMAIL_USER,
+  SEND_EMAILS,
 } from "../../configs/email.config.js";
 import { NODE_ENV, SEND_EMAILS } from "../../configs/serverConfig.js";
 

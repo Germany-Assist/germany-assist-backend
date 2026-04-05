@@ -2,10 +2,8 @@ import serviceServices from "./service.services.js";
 import hashIdUtil from "../../utils/hashId.util.js";
 import authUtils from "../../utils/authorize.util.js";
 import { sequelize } from "../../configs/database.js";
-import { AppError } from "../../utils/error.class.js";
 import serviceMappers from "./service.mappers.js";
-import notificationQueue from "../../jobs/queues/notification.queue.js";
-import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
+import { AppError } from "../../utils/error.class.js";
 
 export async function createService(req, res, next) {
   const transaction = await sequelize.transaction();
@@ -111,30 +109,34 @@ export async function getAllServicesSP(req, res, next) {
   }
 }
 export async function updateService(req, res, next) {
+  const transaction = await sequelize.transaction();
   try {
-    const user = await authUtils.checkRoleAndPermission(
+    const serviceId = hashIdUtil.hashIdDecode(req.params.id);
+
+    await authUtils.checkRoleAndPermission(
       req.auth,
-      ["admin", "service_provider_root", "service_provider_rep", "super_admin"],
+      ["service_provider_root", "service_provider_rep"],
       true,
       "service",
       "update",
     );
-    const owner = await authUtils.checkOwnership(
-      req.body.id,
-      req.auth.relatedId,
-      "Service",
+    const updatedService = await serviceServices.updateService(
+      serviceId,
+      req,
+      transaction,
     );
-    const allowedFields = ["description"];
-    let updateFields = {};
-    allowedFields.forEach((i) => {
-      if (req.body[i]) updateFields[i] = req.body[i];
+    await transaction.commit();
+    return res.status(200).json({
+      message: "Successfully updated service",
+      success: true,
     });
-    await serviceServices.updateService(
-      hashIdUtil.hashIdDecode(req.body.id),
-      updateFields,
-    );
-    res.send({ success: true, message: "Service Updated" });
   } catch (error) {
+    if (req.files) {
+      req.files.forEach((file) => {
+        file.stream?.resume();
+      });
+    }
+    await transaction.rollback();
     next(error);
   }
 }
@@ -152,6 +154,7 @@ export async function deleteService(req, res, next) {
       req.auth.relatedId,
       "Service",
     );
+
     await serviceServices.deleteService(hashIdUtil.hashIdDecode(req.params.id));
     res.send({ success: true, message: "Service Deleted Successfully" });
   } catch (error) {
@@ -180,72 +183,34 @@ export async function alterServiceStatus(req, res, next) {
       ["admin", "super_admin"],
       false,
     );
-    const { status, id } = req.body;
-    await serviceServices.alterServiceStatus(
-      hashIdUtil.hashIdDecode(id),
+    const { status, rejectionReason } = req.body;
+    const { id } = req.params;
+    await serviceServices.alterServiceStatus({
+      id: hashIdUtil.hashIdDecode(id),
       status,
-    );
+      rejectionReason,
+    });
 
     res.sendStatus(200);
   } catch (error) {
     next(error);
   }
 }
-//TODO delete this
-export async function alterServiceStatusSP(req, res, next) {
+export async function pauseResumeService(req, res, next) {
   try {
-    const { status, id } = req.body;
-    if (!["publish", "unpublish"].includes(status)) {
-      throw new AppError(422, "invalid status", true, "invalid status");
-    }
+    const { action } = req.body;
+    const { id } = req.params;
     const user = await authUtils.checkRoleAndPermission(
       req.auth,
       ["service_provider_rep", "service_provider_root"],
       true,
       "service",
-      status,
+      action,
     );
-    await serviceServices.alterServiceStatusSP(
+    await serviceServices.pauseResumeService(
       hashIdUtil.hashIdDecode(id),
-      status,
-    );
-    res.sendStatus(200);
-  } catch (error) {
-    next(error);
-  }
-}
-export async function publishService(req, res, next) {
-  try {
-    const { serviceId } = req.params;
-    const user = await authUtils.checkRoleAndPermission(
+      action,
       req.auth,
-      ["service_provider_rep", "service_provider_root"],
-      true,
-      "service",
-      "publish",
-    );
-    await serviceServices.alterServiceStatusSP(
-      hashIdUtil.hashIdDecode(serviceId),
-      "publish",
-    );
-    res.sendStatus(200);
-  } catch (error) {
-    next(error);
-  }
-}
-export async function unpublishService(req, res, next) {
-  try {
-    const { serviceId } = req.params;
-    const user = await authUtils.checkRoleAndPermission(
-      req.auth,
-      ["service_provider_rep", "service_provider_root"],
-      true,
-      "service",
-      "unpublish",
-    );
-    await serviceServices.alterServiceStatusSP(
-      hashIdUtil.hashIdDecode(serviceId),
-      "unpublish",
     );
     res.sendStatus(200);
   } catch (error) {
@@ -312,8 +277,25 @@ export async function getClientServices(req, res, next) {
     next(error);
   }
 }
+export async function requestApproval(req, res, next) {
+  try {
+    const { id } = req.params;
+    await authUtils.checkRoleAndPermission(
+      req.auth,
+      ["service_provider_rep", "service_provider_root"],
+      false,
+    );
+    await serviceServices.requestApproval(
+      hashIdUtil.hashIdDecode(id),
+      req.auth.relatedId,
+    );
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+}
 const serviceController = {
-  alterServiceStatusSP,
+  pauseResumeService,
   alterServiceStatus,
   restoreService,
   deleteService,
@@ -323,11 +305,10 @@ const serviceController = {
   getAllServicesSP,
   getAllServices,
   createService,
+  requestApproval,
   getServiceProfileForAdminAndSP,
   addToFavorite,
   removeFromFavorite,
   getClientServices,
-  unpublishService,
-  publishService,
 };
 export default serviceController;

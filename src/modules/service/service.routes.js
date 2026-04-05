@@ -6,10 +6,15 @@ import {
   idHashedParamValidator,
 } from "../../validators/general.validators.js";
 import { validateExpress } from "../../middlewares/expressValidator.js";
-import { createServiceValidator } from "./services.validators.js";
+import {
+  createServiceValidator,
+  pauseResumeServiceValidator,
+} from "./services.validators.js";
 import timelineRouter from "../timeline/timeline.routes.js";
 import variantRouter from "../variant/variant.routes.js";
 import multerUpload from "../../configs/multer.config.js";
+import { variantsValidator } from "../variant/variant.validator.js";
+import { timelinesValidator } from "../timeline/timeline.validator.js";
 
 const serviceRouter = express.Router();
 
@@ -36,13 +41,13 @@ serviceRouter.post(
   validateExpress,
   serviceController.createService,
 );
-
-// Get all services of the authenticated provider (approved or not)
+// get the provider his services no matter what the state
 serviceRouter.get(
   "/provider/services",
   jwt.authenticateJwt,
   serviceController.getAllServicesSP,
 );
+// Get a specific service no matter the state
 serviceRouter.get(
   "/provider/services/:id",
   jwt.authenticateJwt,
@@ -50,11 +55,24 @@ serviceRouter.get(
   validateExpress,
   serviceController.getServiceProfileForAdminAndSP,
 );
+//Mark as to do after finalization of onetimes and timelines
 // Update a service (allowed fields only)
 serviceRouter.put(
-  "/provider/services",
+  "/provider/services/patch/:id",
   jwt.authenticateJwt,
   idHashedBodyValidator,
+  validateExpress,
+  serviceController.updateService,
+);
+// update the full service as long as its a draft
+serviceRouter.put(
+  "/provider/services/update/:id",
+  multerUpload.array("images", 4),
+  jwt.authenticateJwt,
+  idHashedParamValidator,
+  createServiceValidator,
+  timelinesValidator,
+  variantsValidator,
   validateExpress,
   serviceController.updateService,
 );
@@ -66,20 +84,22 @@ serviceRouter.delete(
   jwt.authenticateJwt,
   serviceController.deleteService,
 );
+
+// Pause or resume a service
 serviceRouter.put(
-  "/provider/services/status",
+  "/provider/services/:id/status",
+  pauseResumeServiceValidator,
+  validateExpress,
   jwt.authenticateJwt,
-  serviceController.alterServiceStatusSP,
+  serviceController.pauseResumeService,
 );
-serviceRouter.get(
-  "/provider/services/unpublish/:serviceId",
+// request approval on a service
+serviceRouter.put(
+  "/provider/services/:id/requestApproval",
+  idHashedParamValidator,
+  validateExpress,
   jwt.authenticateJwt,
-  serviceController.unpublishService,
-);
-serviceRouter.get(
-  "/provider/services/publish/:serviceId",
-  jwt.authenticateJwt,
-  serviceController.publishService,
+  serviceController.requestApproval,
 );
 /* ---------------- Admin Routes ---------------- */
 // Get all services (any status, any provider)
@@ -103,8 +123,11 @@ serviceRouter.post(
   validateExpress,
   serviceController.restoreService,
 );
+//approve and reject
 serviceRouter.put(
-  "/admin/services/status",
+  "/admin/services/status/:id",
+  idHashedParamValidator,
+  validateExpress,
   jwt.authenticateJwt,
   serviceController.alterServiceStatus,
 );

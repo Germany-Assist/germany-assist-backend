@@ -11,8 +11,8 @@ export const roleTemplates = {
     { action: "create", resource: "service" },
     { action: "update", resource: "service" },
     { action: "delete", resource: "service" },
-    { action: "publish", resource: "service" },
-    { action: "unpublish", resource: "service" },
+    { action: "pause", resource: "service" },
+    { action: "resume", resource: "service" },
     { action: "statistical", resource: "service" },
     // Posts
     { action: "create", resource: "post" },
@@ -68,8 +68,8 @@ export const roleTemplates = {
     { action: "create", resource: "service" },
     { action: "update", resource: "service" },
     { action: "delete", resource: "service" },
-    { action: "publish", resource: "service" },
-    { action: "unpublish", resource: "service" },
+    { action: "pause", resource: "service" },
+    { action: "resume", resource: "service" },
     { action: "statistical", resource: "service" },
 
     // Financial
@@ -147,8 +147,8 @@ export const roleTemplates = {
     // Services
     { action: "approve", resource: "service" },
     { action: "reject", resource: "service" },
-    { action: "publish", resource: "service" },
-    { action: "unpublish", resource: "service" },
+    { action: "pause", resource: "service" },
+    { action: "resume", resource: "service" },
     { action: "statistical", resource: "service" },
     { action: "restore", resource: "service" },
 

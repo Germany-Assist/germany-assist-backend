@@ -47,17 +47,17 @@ export async function totalServices() {
 }
 export async function totalLiveServices() {
   return await db.Service.count({
-    where: { approved: true, rejected: false, published: true },
+    where: { status: "approved" },
   });
 }
 export async function totalPendingServices() {
   return await db.Service.count({
-    where: { approved: false, rejected: false },
+    where: { status: "pending" },
   });
 }
 export async function totalRejectedServices() {
   return await db.Service.count({
-    where: { approved: false, rejected: false },
+    where: { status: "rejected" },
   });
 }
 
