@@ -1,6 +1,8 @@
 import { body, param } from "express-validator";
 import hashIdUtil from "../../utils/hashId.util.js";
 import { SERVICE_TYPES } from "../../configs/constants.js";
+import { timelinesValidator } from "../timeline/timeline.validator.js";
+import { variantsValidator } from "../variant/variant.validator.js";
 
 // Validation for creating a new service
 export const createServiceValidator = [
@@ -25,6 +27,8 @@ export const createServiceValidator = [
       if (!unHashed) throw new Error("invalid id");
       return true;
     }),
+  ...timelinesValidator,
+  ...variantsValidator,
 ];
 
 // Validation for updating a service

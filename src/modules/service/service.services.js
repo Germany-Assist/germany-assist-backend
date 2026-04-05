@@ -37,6 +37,7 @@ const safeJsonParse = (str) => {
 };
 const safeJsonParseVariants = (value, serviceId = null) => {
   if (!value) return null;
+  console.log(typeof value);
   // important i move the parsing of the data to the validator and not here
   if (!Array.isArray(value)) {
     throw new AppError(
