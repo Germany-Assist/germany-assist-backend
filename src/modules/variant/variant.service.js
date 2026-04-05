@@ -18,10 +18,10 @@ async function archiveVariant(providerId, variantId) {
   return result;
 }
 async function createNewVariant(providerId, body) {
-  const { limit, label, price } = body;
+  const { deliveryTime, label, price } = body;
   const serviceId = hashIdUtil.hashIdDecode(body.serviceId);
   const data = {
-    limit,
+    deliveryTime,
     label,
     price,
     serviceId,

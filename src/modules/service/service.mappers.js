@@ -21,9 +21,9 @@ const timelinesFormatter = (timelines) => {
       price,
       startDate,
       endDate,
-      isArchived,
       limit,
       deadlineDate,
+      maxParticipants,
     }) => {
       const numericPrice = parseFloat(price);
       if (numericPrice < minPrice) minPrice = numericPrice;
@@ -35,8 +35,8 @@ const timelinesFormatter = (timelines) => {
         price: numericPrice,
         startDate,
         endDate,
-        isArchived,
         deadlineDate,
+        maxParticipants,
         limit,
       };
     },
@@ -52,7 +52,7 @@ const variantsFormatter = (variants) => {
   if (!variants || variants.length < 1) return undefined;
   let minPrice = Infinity;
   let maxPrice = -Infinity;
-  const formatted = variants.map(({ id, label, price, isArchived, limit }) => {
+  const formatted = variants.map(({ id, label, price, deliveryTime }) => {
     const numericPrice = parseFloat(price);
     if (numericPrice < minPrice) minPrice = numericPrice;
     if (numericPrice > maxPrice) maxPrice = numericPrice;
@@ -60,8 +60,7 @@ const variantsFormatter = (variants) => {
       id: encodeId(id),
       label,
       price: numericPrice,
-      isArchived,
-      limit,
+      deliveryTime,
     };
   });
   return {
@@ -85,7 +84,8 @@ export const sanitizeServices = async (services = []) => {
       type: service.type,
       isPaused: service.isPaused,
       rejectionReason: service.rejectionReason,
-      category: service.Subcategory.title,
+      category: hashIdUtil.hashIdEncode(service.Subcategory.Category.id),
+      subCategory: hashIdUtil.hashIdEncode(service.Subcategory.id),
       serviceProvider: service.ServiceProvider.name,
       image: await resolveImageUrl(service.image[0]?.url),
       timelines: timelinesFormatter(service.timelines),

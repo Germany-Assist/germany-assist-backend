@@ -3,6 +3,28 @@ import hashIdUtil from "../../utils/hashId.util.js";
 import timelineMappers from "./timeline.mappers.js";
 import timelineRepository from "./timeline.repository.js";
 
+async function viewTimelineProvider(relatedId, timelineId, page) {
+  const postsData = await timelineRepository.getTimelineForProvider({
+    relatedId,
+    timelineId,
+    page,
+  });
+  const sanitizedPosts = await timelineMappers.sanitizeTimeline(postsData);
+  if (page > 0) {
+    return {
+      sanitizedPosts,
+      sanitizedPinnedPosts: null,
+    };
+  }
+  const pinnedData = await timelineRepository.getTimelineForProvider({
+    relatedId,
+    timelineId,
+    pinned: true,
+  });
+  const sanitizedPinnedPosts =
+    await timelineMappers.sanitizeTimeline(pinnedData);
+  return { sanitizedPosts, sanitizedPinnedPosts };
+}
 async function getTimelineForClient(userId, timelineId, page) {
   const postsData = await timelineRepository.getTimelineForClient({
     userId,
@@ -41,14 +63,14 @@ async function archiveTimeline(providerId, timelineId) {
   return result;
 }
 async function createNewTimeline(providerId, body) {
-  const { startDate, endDate, deadlineDate, limit, label, price } = body;
+  const { startDate, endDate, deadlineDate, maxParticipants, label, price } =
+    body;
   const serviceId = hashIdUtil.hashIdDecode(body.serviceId);
-
   const data = {
     startDate,
     endDate,
     deadlineDate,
-    limit,
+    maxParticipants,
     label,
     price,
     serviceId,
@@ -79,6 +101,7 @@ async function createNewTimeline(providerId, body) {
 }
 const timelineServices = {
   getTimelineForClient,
+  viewTimelineProvider,
   createNewTimeline,
   archiveTimeline,
 };

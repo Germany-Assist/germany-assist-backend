@@ -35,6 +35,7 @@ export async function createService(req, res, next) {
   }
 }
 
+// this really important route basically all services and roles and even timelines and variants uses it
 export async function getAllServices(req, res, next) {
   try {
     const services = await serviceServices.getAllServices(req.query);
