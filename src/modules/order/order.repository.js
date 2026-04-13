@@ -1,3 +1,4 @@
+import { SERVICES_STATUS } from "../../configs/constants.js";
 import db from "../../database/index.js";
 import { AppError } from "../../utils/error.class.js";
 import { Op } from "sequelize";
@@ -87,7 +88,7 @@ export async function getServiceForPayment({ serviceId, optionId, type }) {
   const service = await db.Service.findOne({
     raw: true,
     nest: true,
-    where: { id: serviceId, published: true, approved: true, rejected: false },
+    where: { id: serviceId, status: SERVICES_STATUS.approved },
     include,
   });
   if (!service) throw new AppError(500, "failed to find service", false);

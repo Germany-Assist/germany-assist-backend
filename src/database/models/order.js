@@ -17,6 +17,7 @@ Order.init(
         "pending_completion",
         "completed",
         "cancelled",
+        "pending_acceptance",
       ),
       allowNull: false,
     },

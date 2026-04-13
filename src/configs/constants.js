@@ -11,8 +11,9 @@ export const NOTIFICATION_EVENTS = {
     CREATED: "service.created",
     APPROVED: "service.approved",
     REJECTED: "service.rejected",
-    PUBLISHED: "service.published",
-    UNPUBLISHED: "service.unpublished",
+    REQUESTED_REVIEW: "service.requestedReview",
+    PAUSED: "service.paused",
+    RESUMED: "service.resumed",
   },
   ORDER: {
     REFUNDED: "order.refunded",
@@ -69,7 +70,6 @@ export const ORDER_STATUS = {
   COMPLETED: "completed",
   CANCELED: "canceled",
   REJECTED: "rejected",
-  ACCEPTED: "accepted",
   REFUNDED: "refunded",
 };
 

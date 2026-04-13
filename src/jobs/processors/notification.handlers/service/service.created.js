@@ -5,13 +5,13 @@ import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import serviceStatusEmail from "../../../../services/email/templates/serviceStatusEmail.js";
 import emailQueue from "../../../../jobs/queues/email.queue.js";
+import { SERVICES_STATUS } from "../../../../configs/constants.js";
 
 // Called only after the service is created
 async function handleServiceCreated({ serviceId }) {
   if (!serviceId) {
     throw new Error("serviceId is required");
   }
-
   // Fetch service with provider info
   const service = await db.Service.findOne({
     where: { id: serviceId },
@@ -19,13 +19,19 @@ async function handleServiceCreated({ serviceId }) {
       { model: db.ServiceProvider, attributes: ["id", "email", "name"] },
     ],
   });
-
   if (!service || !service.ServiceProvider) {
     throw new Error(`Service ${serviceId} or its ServiceProvider not found`);
   }
-
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
-  const providerMessage = `Successfully created new service "${service.title}" with id ${hashedServiceId}. You can publish it anytime. Note that the service still requires admin approval to be live and visible.`;
+  const draftMessage =
+    "We noticed you started creating a service but didn't finish. Complete your setup now to start receiving requests from clients in Germany  ";
+  const requestedReviewMessage = `Successfully created new service "${service.title}" with id ${hashedServiceId}. Your Service is Currently being reviewed by our team. Note that the service still requires admin approval to be live and visible.`;
+  const providerMessage =
+    service.status === SERVICES_STATUS.pending
+      ? requestedReviewMessage
+      : draftMessage;
+
+  const adminMessage = `Provider ${service.ServiceProvider.name} created new service "${service.title}" with id ${hashedServiceId} as a ${service.status} service.`;
 
   const providerEmailHtml = serviceStatusEmail({
     title: "Service Successfully Created",
@@ -49,20 +55,20 @@ async function handleServiceCreated({ serviceId }) {
           serviceProviderId: service.ServiceProvider.id,
           metadata: {
             serviceProviderId: service.ServiceProvider.id,
-            serviceId: service.id,
+            serviceId: hashedServiceId,
           },
         },
         { transaction },
       ),
       db.Notification.create(
         {
-          message: providerMessage,
+          message: adminMessage,
           url: "",
           type: "info",
           isAdmin: true,
           metadata: {
             serviceProviderId: service.ServiceProvider.id,
-            serviceId: service.id,
+            serviceId: hashedServiceId,
           },
         },
         { transaction },
@@ -79,10 +85,12 @@ async function handleServiceCreated({ serviceId }) {
         message: providerMessage,
       },
     );
-    socketNotificationServices.sendSocketNotificationAdmin({
-      id: hashIdUtil.hashIdEncode(adminNotification.id),
-      message: providerMessage,
-    });
+    // i only want to notify the admin when its requesting approval
+    if (service.status === SERVICES_STATUS.pending)
+      socketNotificationServices.sendSocketNotificationAdmin({
+        id: hashIdUtil.hashIdEncode(adminNotification.id),
+        message: adminMessage,
+      });
     await emailQueue.add("sendEmail", {
       to: service.ServiceProvider.email,
       subject: "Service Created - Germany Assist",

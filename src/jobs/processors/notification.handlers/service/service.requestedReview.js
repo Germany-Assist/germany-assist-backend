@@ -5,40 +5,40 @@ import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import serviceStatusEmail from "../../../../services/email/templates/serviceStatusEmail.js";
 import emailQueue from "../../../../jobs/queues/email.queue.js";
+import { SERVICES_STATUS } from "../../../../configs/constants.js";
 
-// Called only after the service is unpublished
-async function handleServiceUnpublished({ serviceId }) {
+// Called only after the service is requested for review
+async function handleRequestedReview({ serviceId }) {
   if (!serviceId) {
     throw new Error("serviceId is required");
   }
-
+  // Fetch service with provider info
   const service = await db.Service.findOne({
     where: { id: serviceId },
     include: [
       { model: db.ServiceProvider, attributes: ["id", "email", "name"] },
     ],
   });
-
   if (!service || !service.ServiceProvider) {
     throw new Error(`Service ${serviceId} or its ServiceProvider not found`);
   }
-
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
-  const providerMessage = `Successfully Unpublished service "${service.title}" with id ${hashedServiceId}. The service won’t be live, but you can publish it anytime.`;
+  const providerMessage = `Successfully Requested Review for "${service.title}" with id ${hashedServiceId}. Your Service is Currently being reviewed by our team. Note that the service still requires admin approval to be live and visible.`;
+  const adminMessage = `Provider ${service.ServiceProvider.name} Requested Review for "${service.title}" with id ${hashedServiceId}.`;
 
   const providerEmailHtml = serviceStatusEmail({
-    title: "Service Successfully Unpublished",
+    title: "Service Successfully Created",
     recipientName: service.ServiceProvider.name,
     mainMessage: providerMessage,
     serviceId: hashedServiceId,
     serviceTitle: service.title,
-    status: "Unpublished",
+    status: "Created",
   });
 
+  // Use a transaction for DB writes
   const transaction = await sequelize.transaction();
-
   try {
-    // Create notifications in parallel
+    // Create notifications
     const [providerNotification, adminNotification] = await Promise.all([
       db.Notification.create(
         {
@@ -48,30 +48,29 @@ async function handleServiceUnpublished({ serviceId }) {
           serviceProviderId: service.ServiceProvider.id,
           metadata: {
             serviceProviderId: service.ServiceProvider.id,
-            serviceId: service.id,
+            serviceId: hashedServiceId,
           },
         },
         { transaction },
       ),
       db.Notification.create(
         {
-          message: providerMessage,
+          message: adminMessage,
           url: "",
           type: "info",
           isAdmin: true,
           metadata: {
             serviceProviderId: service.ServiceProvider.id,
-            serviceId: service.id,
+            serviceId: hashedServiceId,
           },
         },
         { transaction },
       ),
     ]);
 
-    // Commit DB changes first
     await transaction.commit();
 
-    // Fire-and-forget socket notifications
+    // Send socket notifications (fire-and-forget style)
     socketNotificationServices.sendSocketNotificationToProvider(
       service.ServiceProvider.id,
       {
@@ -81,13 +80,11 @@ async function handleServiceUnpublished({ serviceId }) {
     );
     socketNotificationServices.sendSocketNotificationAdmin({
       id: hashIdUtil.hashIdEncode(adminNotification.id),
-      message: providerMessage,
+      message: adminMessage,
     });
-
-    // Queue email
     await emailQueue.add("sendEmail", {
       to: service.ServiceProvider.email,
-      subject: "Service Unpublished - Germany Assist",
+      subject: "Service Created - Germany Assist",
       html: providerEmailHtml,
     });
 
@@ -96,9 +93,9 @@ async function handleServiceUnpublished({ serviceId }) {
     if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
-    errorLogger("Failed handling service unpublished:", error);
+    errorLogger("Failed handling service created:", error);
     throw error;
   }
 }
 
-export default handleServiceUnpublished;
+export default handleRequestedReview;
