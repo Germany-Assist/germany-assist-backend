@@ -274,7 +274,7 @@ async function getServiceByIdPublic(id) {
       },
       {
         model: db.Timeline,
-        where: { isArchived: false },
+        where: { isArchived: false, deadlineDate: { [Op.gte]: new Date() } },
         as: "timelines",
         required: false,
       },
