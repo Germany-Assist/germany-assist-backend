@@ -4,6 +4,8 @@ import authUtils from "../../utils/authorize.util.js";
 import { sequelize } from "../../configs/database.js";
 import serviceMappers from "./service.mappers.js";
 import { AppError } from "../../utils/error.class.js";
+import { NOTIFICATION_EVENTS } from "../../configs/constants.js";
+import notificationQueue from "../../jobs/queues/notification.queue.js";
 
 export async function createService(req, res, next) {
   const transaction = await sequelize.transaction();
@@ -17,6 +19,9 @@ export async function createService(req, res, next) {
     );
     const service = await serviceServices.createService(req, transaction);
     await transaction.commit();
+    notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.CREATED, {
+      serviceId: service.id,
+    });
     return res.status(201).json({
       message: "successfully created service",
       data: { id: hashIdUtil.hashIdEncode(service.id) },
@@ -127,6 +132,10 @@ export async function updateService(req, res, next) {
       transaction,
     );
     await transaction.commit();
+    if (updatedService.status === "pending") {
+      const event = NOTIFICATION_EVENTS.SERVICE.REQUESTED_REVIEW;
+      notificationQueue.add(event, { serviceId });
+    }
     return res.status(200).json({
       message: "Successfully updated service",
       success: true,
@@ -141,27 +150,7 @@ export async function updateService(req, res, next) {
     next(error);
   }
 }
-export async function deleteService(req, res, next) {
-  try {
-    const user = await authUtils.checkRoleAndPermission(
-      req.auth,
-      ["admin", "service_provider_root", "super_admin"],
-      true,
-      "service",
-      "delete",
-    );
-    const owner = await authUtils.checkOwnership(
-      req.params.id,
-      req.auth.relatedId,
-      "Service",
-    );
 
-    await serviceServices.deleteService(hashIdUtil.hashIdDecode(req.params.id));
-    res.send({ success: true, message: "Service Deleted Successfully" });
-  } catch (error) {
-    next(error);
-  }
-}
 export async function restoreService(req, res, next) {
   try {
     const user = await authUtils.checkRoleAndPermission(
@@ -208,11 +197,7 @@ export async function pauseResumeService(req, res, next) {
       "service",
       action,
     );
-    await serviceServices.pauseResumeService(
-      hashIdUtil.hashIdDecode(id),
-      action,
-      req.auth,
-    );
+    await serviceServices.pauseResumeService(id, action, req.auth);
     res.sendStatus(200);
   } catch (error) {
     next(error);
@@ -299,7 +284,6 @@ const serviceController = {
   pauseResumeService,
   alterServiceStatus,
   restoreService,
-  deleteService,
   updateService,
   getServiceProfile,
   getAllServicesAdmin,

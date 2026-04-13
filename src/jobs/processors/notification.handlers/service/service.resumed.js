@@ -4,71 +4,57 @@ import { sequelize } from "../../../../configs/database.js";
 import hashIdUtil from "../../../../utils/hashId.util.js";
 import { errorLogger } from "../../../../utils/loggers.js";
 import serviceStatusEmail from "../../../../services/email/templates/serviceStatusEmail.js";
-import emailQueue from "../../../../jobs/queues/email.queue.js";
+import emailQueue from "../../../queues/email.queue.js";
 
-// Called only after the admin approves the service
-async function handleServiceApproved({ serviceId }) {
+// Called only after the service is published
+async function handleServiceResumed({ serviceId }) {
   if (!serviceId) {
     throw new Error("serviceId is required");
   }
-  // Fetch service with provider info
+
   const service = await db.Service.findOne({
     where: { id: serviceId },
     include: [
       { model: db.ServiceProvider, attributes: ["id", "email", "name"] },
     ],
   });
+
   if (!service || !service.ServiceProvider) {
     throw new Error(`Service ${serviceId} or its ServiceProvider not found`);
   }
+
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
-  const providerMessage = `Good news! Your service ${service.title} has been approved.`;
+  const providerMessage = `Successfully Resumed service "${service.title}" with id ${hashedServiceId} The service will be live.`;
+
   const providerEmailHtml = serviceStatusEmail({
-    title: "Service Successfully Approved",
+    title: "Service Successfully Resumed",
     recipientName: service.ServiceProvider.name,
     mainMessage: providerMessage,
     serviceId: hashedServiceId,
     serviceTitle: service.title,
-    status: "Approved",
+    status: "Resumed",
   });
 
   const transaction = await sequelize.transaction();
 
   try {
     // Create notifications in parallel
-    const [providerNotification, adminNotification] = await Promise.all([
-      db.Notification.create(
-        {
-          message: providerMessage,
-          url: "",
-          type: "info",
+    const providerNotification = await db.Notification.create(
+      {
+        message: providerMessage,
+        url: "",
+        type: "info",
+        serviceProviderId: service.ServiceProvider.id,
+        metadata: {
           serviceProviderId: service.ServiceProvider.id,
-          metadata: {
-            serviceProviderId: service.ServiceProvider.id,
-            serviceId: service.id,
-          },
+          serviceId: hashedServiceId,
         },
-        { transaction },
-      ),
-      db.Notification.create(
-        {
-          message: providerMessage,
-          url: "",
-          type: "info",
-          isAdmin: true,
-          metadata: {
-            serviceProviderId: service.ServiceProvider.id,
-            serviceId: service.id,
-          },
-        },
-        { transaction },
-      ),
-    ]);
-
+      },
+      { transaction },
+    );
     // Commit DB changes first
     await transaction.commit();
-
-    // Send socket notifications (fire-and-forget)
+    // Fire-and-forget: send socket notifications
     socketNotificationServices.sendSocketNotificationToProvider(
       service.ServiceProvider.id,
       {
@@ -76,15 +62,10 @@ async function handleServiceApproved({ serviceId }) {
         message: providerMessage,
       },
     );
-    socketNotificationServices.sendSocketNotificationAdmin({
-      id: hashIdUtil.hashIdEncode(adminNotification.id),
-      message: providerMessage,
-    });
-
     // Queue email
     await emailQueue.add("sendEmail", {
       to: service.ServiceProvider.email,
-      subject: "Service Approved - Germany Assist",
+      subject: "Service Resumed - Germany Assist",
       html: providerEmailHtml,
     });
 
@@ -93,9 +74,9 @@ async function handleServiceApproved({ serviceId }) {
     if (transaction && !transaction.finished) {
       await transaction.rollback();
     }
-    errorLogger("Failed handling service approval:", error);
+    errorLogger("Failed handling service resume:", error);
     throw error;
   }
 }
 
-export default handleServiceApproved;
+export default handleServiceResumed;

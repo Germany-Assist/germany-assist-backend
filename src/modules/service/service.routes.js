@@ -76,14 +76,6 @@ serviceRouter.put(
   validateExpress,
   serviceController.updateService,
 );
-// Delete a service (soft delete)
-serviceRouter.delete(
-  "/provider/services/:id",
-  idHashedParamValidator,
-  validateExpress,
-  jwt.authenticateJwt,
-  serviceController.deleteService,
-);
 
 // Pause or resume a service
 serviceRouter.put(

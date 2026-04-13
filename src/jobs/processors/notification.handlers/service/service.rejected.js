@@ -24,7 +24,7 @@ async function handleServiceRejection({ serviceId, reason }) {
   }
 
   const hashedServiceId = hashIdUtil.hashIdEncode(serviceId);
-  const providerMessage = `Your service "${service.title}" with id ${hashedServiceId} was rejected. Rejection stops the service. Reason: ${reason || "not provided, please contact the admin"}.`;
+  const providerMessage = `We reviewed your service ${service.title} and it needs a few adjustments:  ${reason || "not provided, please contact the admin"}. Please update these details so we can get it approved.`;
 
   const providerEmailHtml = serviceStatusEmail({
     title: "Service Rejected",

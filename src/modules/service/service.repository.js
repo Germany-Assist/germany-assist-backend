@@ -17,12 +17,13 @@ const serviceRepository = {
     return service.get({ plain: true });
   },
 
-  async findAndCountAll({ where, limit, offset, include }) {
+  async findAndCountAll({ where, limit, offset, include, order }) {
     return await db.Service.findAndCountAll({
       where,
       limit,
       offset,
       include,
+      order,
       distinct: true,
       col: "id",
     });

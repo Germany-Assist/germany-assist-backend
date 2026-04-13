@@ -37,7 +37,6 @@ const safeJsonParse = (str) => {
 };
 const safeJsonParseVariants = (value, serviceId = null) => {
   if (!value) return null;
-  console.log(typeof value);
   // important i move the parsing of the data to the validator and not here
   if (!Array.isArray(value)) {
     throw new AppError(
@@ -118,6 +117,7 @@ const safeJsonParseTimelines = (value, serviceId = null) => {
 /* ---------------- Main Services ---------------- */
 
 async function createService(req, transaction) {
+  const requestedStatus = req.body.status || false;
   let serviceData = {
     userId: req.auth.id,
     serviceProviderId: req.auth.relatedId,
@@ -126,6 +126,10 @@ async function createService(req, transaction) {
     type: req.body.type,
     subcategoryId: hashIdUtil.hashIdDecode(req.body.subcategoryId),
     requirements: req.body.requirements,
+    status:
+      requestedStatus === "review"
+        ? SERVICES_STATUS.pending
+        : SERVICES_STATUS.draft,
   };
   if (serviceData.type === SERVICE_TYPES.timeline) {
     serviceData.timelines = safeJsonParseTimelines(
@@ -145,6 +149,7 @@ async function createService(req, transaction) {
       "service cant be both",
     );
   }
+
   const service = await serviceRepository.createService(
     serviceData,
     transaction,
@@ -171,10 +176,6 @@ async function createService(req, transaction) {
       transaction,
     });
   }
-
-  notificationQueue.add(NOTIFICATION_EVENTS.SERVICE.CREATED, {
-    serviceId: service.id,
-  });
   return service;
 }
 
@@ -184,7 +185,7 @@ async function getAllServices(filters, authority) {
   const limit = parseInt(filters.limit) || 10;
   const offset = (page - 1) * limit;
   const where = {};
-
+  let order = [["createdAt", "DESC"]];
   if (authority === "admin") {
     if (filters.status) where.status = SERVICES_STATUS[filters.status];
     if (filters.isPaused) where.isPaused = filters.isPaused;
@@ -207,6 +208,8 @@ async function getAllServices(filters, authority) {
   if (filters.type) where.type = filters.type;
   if (filters.serviceProvider && authority !== "serviceProvider")
     where.serviceProviderId = filters.serviceProvider;
+  if (filters.order && filters.orderBy)
+    order = [[filters.orderBy, filters.order]];
 
   const include = [
     {
@@ -248,6 +251,7 @@ async function getAllServices(filters, authority) {
     limit,
     offset,
     include,
+    order,
   });
 
   return {
@@ -393,13 +397,17 @@ async function updateService(serviceId, req, transaction) {
       false,
       "service is not editable",
     );
+  const requestedStatus = req.body.status || false;
   let updateData = {
     title: req.body.title,
     description: req.body.description,
     type: req.body.type,
     subcategoryId: hashIdUtil.hashIdDecode(req.body.subcategoryId),
     requirements: req.body.requirements,
-    status: "draft",
+    status:
+      requestedStatus === "review"
+        ? SERVICES_STATUS.pending
+        : SERVICES_STATUS.draft,
   };
 
   if (updateData.type === SERVICE_TYPES.timeline) {
@@ -414,11 +422,12 @@ async function updateService(serviceId, req, transaction) {
   }
 
   // 3. Update Core Service Data
-  await serviceRepository.update(updateData, {
+  const updatedService = await serviceRepository.update(updateData, {
     where: { id: serviceId, serviceProviderId: req.auth.relatedId },
     transaction: transaction,
+    returning: true,
   });
-  // i should delete all the old options and then add the new ones but at this stage i dont know its eather a timeline or a variant
+  // i should delete all the old options and then add the new ones but at this stage i dont know its either a timeline or a variant
   // so im going to delete all the old options and then add the new ones
 
   // 4.handling the options
@@ -477,19 +486,8 @@ async function updateService(serviceId, req, transaction) {
       transaction,
     });
   }
-}
-
-async function deleteService(id) {
-  const service = await serviceRepository.findByPk(id);
-  if (!service) throw new AppError(404, "Service not found");
-  return await service.destroy();
-}
-
-async function restoreService(id) {
-  const service = await serviceRepository.findByPk(id, { paranoid: false });
-  if (!service) throw new AppError(404, "Service not found");
-  if (!service.deletedAt) throw new AppError(400, "Service isn't deleted");
-  return await service.restore();
+  return updatedService[1][0].toJSON();
+  // i will add the notification outside to make sure of the transaction success
 }
 
 /* ---------------- Status & Logic ---------------- */
@@ -499,10 +497,8 @@ async function alterServiceStatus({ id, status, rejectionReason }) {
   if (!service) throw new AppError(400, "failed to find service");
   if (service.status === SERVICES_STATUS.draft)
     throw new AppError(400, "service is in draft");
-
   if (status === SERVICES_STATUS.approved) {
     service.status = SERVICES_STATUS.approved;
-    service.rejectionReason = null; // Fix: Clear rejection reason on success
   } else if (status === SERVICES_STATUS.rejected) {
     if (!rejectionReason?.trim())
       throw new AppError(400, "rejection reason is required");
@@ -511,23 +507,28 @@ async function alterServiceStatus({ id, status, rejectionReason }) {
   } else {
     throw new AppError(400, "failed to process request");
   }
-
   await service.save();
-
   const event =
     status === "approved"
       ? NOTIFICATION_EVENTS.SERVICE.APPROVED
       : NOTIFICATION_EVENTS.SERVICE.REJECTED;
   notificationQueue.add(event, { serviceId: id });
+  return;
 }
-
 async function pauseResumeService(id, action, auth) {
+  const serviceId = hashIdUtil.hashIdDecode(id);
   const service = await serviceRepository.findOne({
-    where: { id, serviceProviderId: auth.relatedId },
+    where: { id: serviceId, serviceProviderId: auth.relatedId },
   });
   if (!service) throw new AppError(400, "failed to find service");
   service.isPaused = action === SERVICE_ACTIONS.PAUSE;
-  return await service.save();
+  await service.save();
+  const event =
+    action === SERVICE_ACTIONS.PAUSE
+      ? NOTIFICATION_EVENTS.SERVICE.PAUSED
+      : NOTIFICATION_EVENTS.SERVICE.RESUMED;
+  notificationQueue.add(event, { serviceId });
+  return;
 }
 
 async function requestApproval(serviceId, providerId) {
@@ -543,10 +544,10 @@ async function requestApproval(serviceId, providerId) {
 
   service.status = SERVICES_STATUS.pending;
   await service.save();
+  const event = NOTIFICATION_EVENTS.SERVICE.REQUESTED_REVIEW;
+  notificationQueue.add(event, { serviceId: service.id });
 }
-
 /* ---------------- Ratings & Favorites ---------------- */
-
 async function updateServiceRating(
   {
     serviceId,
@@ -585,7 +586,6 @@ async function updateServiceRating(
     { transaction: t },
   );
 }
-
 async function alterFavorite(serviceId, userId, status) {
   if (status === "add") {
     await db.Favorite.create({ serviceId, userId });
@@ -595,7 +595,6 @@ async function alterFavorite(serviceId, userId, status) {
     throw new AppError(500, "invalid status");
   }
 }
-
 const serviceServices = {
   requestApproval,
   createService,
@@ -603,8 +602,6 @@ const serviceServices = {
   pauseResumeService,
   getServiceByIdPublic,
   updateService,
-  deleteService,
-  restoreService,
   alterServiceStatus,
   getServiceProfileForAdminAndSP,
   updateServiceRating,
